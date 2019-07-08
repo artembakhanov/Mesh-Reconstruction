@@ -44,7 +44,7 @@ public class ConvexPolyhedron
             if (curSign == 0)
                 continue;
             if (lastSign == -2 || lastSign == curSign)
-                lastSign = curSign;
+                lastSign = curSign; 
             else
                 return false;
         }

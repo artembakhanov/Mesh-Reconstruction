@@ -8,9 +8,9 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Wireframe
-  m_Shader: {fileID: 4800000, guid: 7483a4a7442f55747a1dc9a00419257d, type: 3}
-  m_ShaderKeywords: ETC1_EXTERNAL_ALPHA USEDISCARD_ON _BORDER_LIGHT_USES_HOVER_COLOR
-    _DIRECTIONAL_LIGHT _HOVER_LIGHT _SPECULAR_HIGHLIGHTS
+  m_Shader: {fileID: 4800000, guid: d92ddc3fd5835084183470c52f630cac, type: 3}
+  m_ShaderKeywords: ETC1_EXTERNAL_ALPHA _BORDER_LIGHT_USES_HOVER_COLOR _DIRECTIONAL_LIGHT
+    _HOVER_LIGHT _SPECULAR_HIGHLIGHTS
   m_LightmapFlags: 1
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 1
@@ -85,7 +85,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - UseDiscard: 1
+    - UseDiscard: 0
     - _AlbedoAlphaMode: 0
     - _BlendOp: 0
     - _BorderLight: 0
@@ -139,7 +139,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _WireThickness: 504
+    - _WireThickness: 0
     - _ZTest: 4
     - _ZWrite: 1
     m_Colors:
@@ -152,10 +152,10 @@ Material:
     - _EnvironmentColorX: {r: 1, g: 0, b: 0, a: 1}
     - _EnvironmentColorY: {r: 0, g: 1, b: 0, a: 1}
     - _EnvironmentColorZ: {r: 0, g: 0, b: 1, a: 1}
-    - _FillColor: {r: 0, g: 0, b: 0, a: 0.49803922}
+    - _FillColor: {r: 0.9056604, g: 0.16660735, b: 0.16660735, a: 0.07058824}
     - _HoverColorOpaqueOverride: {r: 1, g: 1, b: 1, a: 1}
     - _HoverColorOverride: {r: 1, g: 1, b: 1, a: 1}
     - _InnerGlowColor: {r: 1, g: 1, b: 1, a: 0.75}
-    - _LineColor: {r: 0, g: 0.40902853, b: 1, a: 1}
+    - _LineColor: {r: 1, g: 1, b: 1, a: 0.4745098}
     - _RimColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     - _WireColor: {r: 1, g: 0, b: 0, a: 1}

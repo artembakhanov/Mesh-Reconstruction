@@ -92,6 +92,8 @@ namespace Bakhanov.IPD
         public readonly Vector3[] vertices;
         public readonly int[] vertInds;
         public readonly Face face;
+        public static int counter3d = 0;
+        public static int counter2d = 0;
 
         /// <summary>
         /// Default constructor
@@ -138,7 +140,7 @@ namespace Bakhanov.IPD
 
             } else
             {
-                // planes are not parallel
+                // planes are not parallel  
 
                 geomIntegrity = Сheck3d(o, allowedPoints, fixedEdges); 
             }
@@ -155,6 +157,7 @@ namespace Bakhanov.IPD
         /// <returns></returns>
         private bool Сheck3d(Triangle o, Vector3[] allowedPoints, HashSet<Edge> fixedEdges)
         {
+            ++counter3d;
             int comp = 42;
             float[] pt1 = new float[3];
             float[] pt2 = new float[3];
@@ -196,6 +199,7 @@ namespace Bakhanov.IPD
         /// <returns>True if geometry integrity holds</returns>
         private bool Check2d(Triangle o, Vector3[] allowedPoints)
         {
+            counter2d++;
             List<Vector3> vers = new List<Vector3> { this.vertices[0], this.vertices[1], this.vertices[2] };
             List<Vector3> vers2 = new List<Vector3> { o.vertices[0], o.vertices[1], o.vertices[2] };
             List<Vector3> commonVers = new List<Vector3>();

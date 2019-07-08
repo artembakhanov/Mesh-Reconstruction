@@ -7,6 +7,9 @@ using System.IO;
 
 public class IPDMeshCreator
 {
+    private int buildPCounter = 0;
+    private int findAPCounter = 0;
+
     private List<Point> PointCloud = new List<Point>();
     private Bakhanov.VoxelSet.VoxelSet VoxelSet;
     private List<int> meshTriangles = new List<int>();
@@ -42,8 +45,10 @@ public class IPDMeshCreator
         HashSet<Edge> boundaryEdges = new HashSet<Edge>();
         List<Triangle> triangles = new List<Triangle>();
 
+        Debug.Log("Here start searching a seed triangle");
         AddSeedTriangle(aeq, edges, triangles); // add first triangle to the mesh
 
+        Debug.Log("Here start searching other points");
         while (aeq.Count != 0)
         {
             Edge edge_ij = aeq.Dequeue(); // current edge
@@ -59,6 +64,7 @@ public class IPDMeshCreator
             }
         }
 
+        Debug.Log($"Triangle check 3d { Triangle.counter3d }, Triangle check 2d { Triangle.counter2d }, find active point {findAPCounter}, build polyhedron {buildPCounter}");
         return meshTriangles.ToArray();
     }
 
@@ -109,6 +115,7 @@ public class IPDMeshCreator
     /// <returns>Polyhedron object that is the influence region.</returns>
     private ConvexPolyhedron BuildPolyhedron(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2)
     {
+        buildPCounter++;
         ap1 = -1;
         ap2 = -1;
         int i = edge.vertex1;
@@ -200,6 +207,7 @@ public class IPDMeshCreator
     /// <returns>null if there is no active point, the index of the point</returns>
     private int? FindActivePoint(Edge e_ij, HashSet<Edge> edges, List<Triangle> triangles, HashSet<Edge> fixedEdges)
     {
+        findAPCounter++;
         int ap1, ap2;
 
         ConvexPolyhedron p = BuildPolyhedron(e_ij, edges, out ap1, out ap2);
@@ -214,10 +222,10 @@ public class IPDMeshCreator
         var points = VoxelSet.GetInnerPoints(p);
         float sum = float.PositiveInfinity;
         int? activePoint = null;
-        List < Triangle > tr = new List<Triangle>();
+        HashSet < Triangle > tr = new HashSet<Triangle>();
         foreach (var m in points)
         {
-            tr.AddRange(PointCloud[m].triangles);
+            tr.UnionWith(PointCloud[m].triangles);
         }
         foreach (var m in points)
         {
@@ -239,8 +247,9 @@ public class IPDMeshCreator
     /// <param name="m">Candidate</param>
     /// <param name="triangles">List of existing triangles</param>
     /// <returns>true if geometry integrity holds, false otherwise</returns>
-    private bool GeomIntegrity(Edge e_ij, int m, List<Triangle> triangles, Vector3[] allowedPoints, HashSet<Edge> fixedEdges)
+    private bool GeomIntegrity(Edge e_ij, int m, HashSet<Triangle> triangles, Vector3[] allowedPoints, HashSet<Edge> fixedEdges)
     {
+        
         Triangle candidate = new Triangle(PointCloud[e_ij.vertex1].Position, PointCloud[e_ij.vertex2].Position, PointCloud[m].Position, new int[] { e_ij.vertex1, e_ij.vertex2, m });
 
         foreach (var triangle in triangles)

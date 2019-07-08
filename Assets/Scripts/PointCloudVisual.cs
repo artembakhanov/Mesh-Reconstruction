@@ -10,7 +10,7 @@ using UnityEngine.XR.ARFoundation;
 public class PointCloudVisual : MonoBehaviour
 {
     public ARPointCloudManager aRPointCloudManager;
-    public Slider radiusSlider;
+    public Slider distanceSlider;
     public Slider voxelSizeSlider;
     public Text debugText;
     public Material[] meshMaterials;
@@ -32,7 +32,7 @@ public class PointCloudVisual : MonoBehaviour
     private float size;
     private ulong counter = 0;
     private int currentMaterial = 0;
-    private float radius = 0.02f;
+    private float maxDistance = 1f;
 
     private bool particlesShown = true;
     private bool online = false;
@@ -64,7 +64,7 @@ public class PointCloudVisual : MonoBehaviour
 
     public void ReadFle()
     {
-        string filePath = "D:\\Unity Projects\\ARTest 3\\startpoints6.txt";
+        string filePath = "D:\\Unity Projects\\ARTest 3\\startpoints8.txt";
         if (!File.Exists(filePath)) return;
 
         string[] lines = File.ReadAllLines(filePath);
@@ -100,9 +100,9 @@ public class PointCloudVisual : MonoBehaviour
         }
     }
 
-    public void RadiusChange()
+    public void DistanceChange()
     {
-        radius = radiusSlider.value;
+        maxDistance = distanceSlider.value;
 
         UpdateDebugInfo();
     }
@@ -311,8 +311,8 @@ public class PointCloudVisual : MonoBehaviour
 
         var updated = obj.updated[0];
         for (int i = 0; i < updated.positions.Length; ++i) {
-            Vector3 screenPos = Camera.current.WorldToScreenPoint(updated.positions[i]);
-            VoxelSet.AddPoint(updated.identifiers[i], updated.positions[i], updated.confidenceValues[i], Camera.current.transform.forward, true);
+            if (Vector3.Distance(updated.positions[i], Camera.current.transform.position) < maxDistance)
+                VoxelSet.AddPoint(updated.identifiers[i], updated.positions[i], updated.confidenceValues[i], Camera.current.transform.forward, true);
         }
 
         if (particlesShown)
@@ -329,6 +329,6 @@ public class PointCloudVisual : MonoBehaviour
 
     private void UpdateDebugInfo()
     {
-        debugText.text = $"Radius: {radiusSlider.value}\nVoxel Size: {voxelSizeSlider.value}\nParticles: {VoxelSet.GetParticles().Count}\nHidden Pa-s: {VoxelSet.GetPoints().Count}";
+        debugText.text = $"Radius: {distanceSlider.value}\nVoxel Size: {voxelSizeSlider.value}\nParticles: {VoxelSet.GetParticles().Count}\nHidden Pa-s: {VoxelSet.GetPoints().Count}";
     }
 }

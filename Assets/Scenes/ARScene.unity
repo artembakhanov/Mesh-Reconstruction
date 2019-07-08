@@ -1294,7 +1294,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &466358380
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1889,7 +1889,7 @@ GameObject:
   - component: {fileID: 854905463}
   - component: {fileID: 854905464}
   m_Layer: 5
-  m_Name: MaxRadius
+  m_Name: MaxDistance
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1960,10 +1960,10 @@ MonoBehaviour:
   m_FillRect: {fileID: 259715464}
   m_HandleRect: {fileID: 1577749884}
   m_Direction: 0
-  m_MinValue: 0.1
-  m_MaxValue: 40
+  m_MinValue: 0
+  m_MaxValue: 2
   m_WholeNumbers: 0
-  m_Value: 20
+  m_Value: 1
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -2509,7 +2509,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1467284511
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8122,7 +8122,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   aRPointCloudManager: {fileID: 1467284517}
-  radiusSlider: {fileID: 854905464}
+  distanceSlider: {fileID: 0}
   voxelSizeSlider: {fileID: 2022110543}
   debugText: {fileID: 1114040582}
   meshMaterials:
