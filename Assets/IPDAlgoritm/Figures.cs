@@ -141,7 +141,6 @@ namespace Bakhanov.IPD
             } else
             {
                 // planes are not parallel  
-
                 geomIntegrity = Сheck3d(o, allowedPoints, fixedEdges); 
             }
 
@@ -171,12 +170,12 @@ namespace Bakhanov.IPD
             int common1_1 = -1, common2_1 = -1;
             FindCommonPoints(out common1_1, this, point1);
             FindCommonPoints(out common2_1, o, point1);
-            if ((point1 - point2).magnitude < 1e-6f)
+            if ((point1 - point2).magnitude < 1e-5f)
             {
                 if (common1_1 != common2_1) return false;
                 foreach (var ap in allowedPoints)
                 {
-                    if ((ap - point1).magnitude < 1e-6f)
+                    if ((ap - point1).magnitude < 1e-5f)
                         return true;
                 }
                 return false; // common1_1 == 1 && common2_1 == 1;
@@ -253,7 +252,7 @@ namespace Bakhanov.IPD
 
             for (int i = 0; i < 3; ++i)
             {
-                if ((t.vertices[i] - point1).magnitude < 1e-6f) common = t.vertInds[i];
+                if ((t.vertices[i] - point1).magnitude < 1e-5f) common = t.vertInds[i];
             }
         }
 

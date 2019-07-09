@@ -113,7 +113,7 @@ public class IPDMeshCreator
     /// <param name="edge">The edge, which influence region to be foind.</param>
     /// <param name="edges">The set of existing edges.</param>
     /// <returns>Polyhedron object that is the influence region.</returns>
-    private ConvexPolyhedron BuildPolyhedron(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2)
+    private ConvexPolyhedron BuildPolyhedron(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2, out int[] innerPoints)
     {
         buildPCounter++;
         ap1 = -1;
@@ -154,7 +154,7 @@ public class IPDMeshCreator
 
         // here it checks whether there are some edges inside the influnce region
         // that are connected to i or j
-        var points = VoxelSet.GetInnerPoints(polyhedron);
+        var points = VoxelSet.GetInnerPoints(polyhedron, p_m);
         Vector3? pLeft = null, pRight = null;
         float minAngleLeft = 181f, minAngleRight = 181f;
         foreach (var point in points)
@@ -195,6 +195,7 @@ public class IPDMeshCreator
             polyhedron.AddFace(Vector3.Cross(N, (Vector3)pRight - jp).normalized, jp);
         }
 
+        innerPoints = points;
         return polyhedron;
     }
 
@@ -210,7 +211,8 @@ public class IPDMeshCreator
         findAPCounter++;
         int ap1, ap2;
 
-        ConvexPolyhedron p = BuildPolyhedron(e_ij, edges, out ap1, out ap2);
+        int[] innerPoints;
+        ConvexPolyhedron p = BuildPolyhedron(e_ij, edges, out ap1, out ap2, out innerPoints);
         List<Vector3> allowedPoints = new List<Vector3>
         {
             PointCloud[e_ij.vertex1].Position,
@@ -219,10 +221,11 @@ public class IPDMeshCreator
         if (ap1 != -1) allowedPoints.Add(PointCloud[ap1].Position);
         if (ap2 != -1) allowedPoints.Add(PointCloud[ap2].Position);
 
-        var points = VoxelSet.GetInnerPoints(p);
+        var points = VoxelSet.GetInnerPoints(p, (PointCloud[e_ij.vertex1].Position + PointCloud[e_ij.vertex2].Position) / 2);
+        //var points = GetInnerPoints(p, innerPoints);
         float sum = float.PositiveInfinity;
         int? activePoint = null;
-        HashSet < Triangle > tr = new HashSet<Triangle>();
+        HashSet<Triangle> tr = new HashSet<Triangle>();
         foreach (var m in points)
         {
             tr.UnionWith(PointCloud[m].triangles);
@@ -238,6 +241,18 @@ public class IPDMeshCreator
         }
 
         return activePoint;
+    }
+
+    private List<int> GetInnerPoints(ConvexPolyhedron p, int[] innerPoints)
+    {
+        List<int> points = new List<int>();
+        for (int k = 0; k < innerPoints.Length; ++k)
+        {
+            if (p.IsPointInside(PointCloud[innerPoints[k]].Position))
+                points.Add(innerPoints[k]);
+        }
+
+        return points;
     }
 
     /// <summary>

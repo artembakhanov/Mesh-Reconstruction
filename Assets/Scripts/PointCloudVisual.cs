@@ -21,7 +21,7 @@ public class PointCloudVisual : MonoBehaviour
 
     private ParticleSystem cloudSystem;
     private GameObject meshObject;
-    private VoxelSet VoxelSet = new VoxelSet(0.02f) { CheckRadix = true };
+    private VoxelSet VoxelSet = new VoxelSet(0.2f) { CheckRadix = true };
 
     private Dictionary<ulong, float> confValues = new Dictionary<ulong, float>();
     private Dictionary<ulong, int> indexes = new Dictionary<ulong, int>();
@@ -36,7 +36,7 @@ public class PointCloudVisual : MonoBehaviour
 
     private bool particlesShown = true;
     private bool online = false;
-    private bool drawVoxels = false;
+    private bool drawVoxels = true;
 
     public void Clear()
     {
@@ -243,8 +243,8 @@ public class PointCloudVisual : MonoBehaviour
         IPDMeshCreator meshCreator = new IPDMeshCreator(VoxelSet);
         int[] triangles = meshCreator.ComputeMeshTriangles();//meshCreator.ComputeMeshTriangles(radius: radius);        
 
-        //StartCoroutine(DrawMesh(triangles));
-        DrawMesh1(triangles);
+        StartCoroutine(DrawMesh(triangles));
+        //DrawMesh1(triangles);
     }
 
     private void DrawMesh1(int[] triangles)
@@ -273,7 +273,7 @@ public class PointCloudVisual : MonoBehaviour
 
         for (int i = 0; i < triangles.Length / 3; i++)
         {
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(0.5f);
             nTriangles.Add(triangles[i * 3]);
             nTriangles.Add(triangles[i * 3 + 1]);
             nTriangles.Add(triangles[i * 3 + 2]);

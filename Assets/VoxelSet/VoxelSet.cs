@@ -115,12 +115,12 @@ namespace Bakhanov.VoxelSet
             if (!IdIndexPairs.TryGetValue(id, out int index))
                 return false;
 
-            GetVoxel(Points[index].Position).Remove(index);
+            GetVoxelForEditing(Points[index].Position).Remove(index);
 
             int lastIndex = Points.Count - 1;
             if (lastIndex > 0 && lastIndex != index)
             {
-                List<int> voxel = GetVoxel(Points[lastIndex].Position);
+                List<int> voxel = GetVoxelForEditing(Points[lastIndex].Position);
 
                 voxel[voxel.FindIndex(i => i.Equals(lastIndex))] = index;
                 IdIndexPairs[Points[lastIndex].Id] = index;
@@ -184,7 +184,7 @@ namespace Bakhanov.VoxelSet
                 point.ColliderRadius = Radius(point.ConfidenceValue);
             //return false;
 
-            GetVoxel(point.Position).Add(Points.Count);
+            GetVoxelForEditing(point.Position).Add(Points.Count);
             IdIndexPairs.Add(point.Id, Points.Count);
 
             ParticleSystem.Particle particle = new ParticleSystem.Particle
@@ -242,13 +242,36 @@ namespace Bakhanov.VoxelSet
         /// </summary>
         /// <param name="p">The polyhedron.</param>
         /// <returns>The indices of the points.</returns>
-        public int[] GetInnerPoints(ConvexPolyhedron p)
+        public int[] GetInnerPoints(ConvexPolyhedron p, Vector3? seedPoint = null)
         {
             List<int> points = new List<int>();
-            for (int k = 0; k < Points.Count; ++k)
+
+            if (seedPoint != null)
             {
-                if (p.IsPointInside(Points[k].RightHandedPosition))
-                    points.Add(k);
+                for (int k = 0; k < Points.Count; ++k)
+                {
+                    if (p.IsPointInside(Points[k].RightHandedPosition))
+                        points.Add(k);
+                }
+            } else
+            {
+                Vector3 _seedPoint = (Vector3)seedPoint;
+                Vector3Int seedKey = GetKey(new Vector3(_seedPoint.x, _seedPoint.z, _seedPoint.y));
+                for (int i = -5; i <= 5; ++i)
+                {
+                    for (int j = -5; j <= 5; ++j)
+                    {
+                        for (int l = -5; l <= 5; ++l)
+                        {
+                            var voxelPoints = GetVoxelForEditing(seedKey + new Vector3Int(i, j, l));
+                            for (int k = 0; k < voxelPoints.Count; ++k)
+                            {
+                                if (p.IsPointInside(Points[voxelPoints[k]].RightHandedPosition))
+                                    points.Add(voxelPoints[k]);
+                            }
+                        }
+                    }
+                }
             }
 
             return points.ToArray();
@@ -318,7 +341,7 @@ namespace Bakhanov.VoxelSet
 
             foreach (Vector3Int voxel in nearVoxels)
             {
-                List<int> vPoints = GetVoxel(voxel);
+                List<int> vPoints = GetVoxelForEditing(voxel);
                 foreach (int point in vPoints)
                 {
                     points.Add(Points[point]);
@@ -380,16 +403,26 @@ namespace Bakhanov.VoxelSet
             return direction;
         }
 
-        private List<int> GetVoxel(Vector3 position)
+        private List<int> GetVoxelForEditing(Vector3 position)
         {
-            return GetVoxel(GetKey(position));
+            return GetVoxelForEditing(GetKey(position));
+        }
+
+        private List<int> GetVoxelForEditing(Vector3Int key)
+        {
+            if (!Voxels.ContainsKey(key))
+            {
+                Voxels.Add(key, new List<int>());
+            }
+
+            return Voxels[key];
         }
 
         private List<int> GetVoxel(Vector3Int key)
         {
             if (!Voxels.ContainsKey(key))
             {
-                Voxels.Add(key, new List<int>());
+                return new List<int>();
             }
 
             return Voxels[key];
