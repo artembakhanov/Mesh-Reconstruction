@@ -12,11 +12,12 @@ namespace Bakhanov.VoxelSet{
         public float ConfidenceValue;
         public float ColliderRadius = 0.01f;
         public int PointGroup;
+        public int Version;
 
         #region Constructors
         public Point(ulong id, Vector3 position, float confidenceValue)
         {
-            ColliderRadius = VoxelSet.MaxColliderRadius;
+            ColliderRadius = VoxelSet1.MaxColliderRadius;
             Id = id;
             Position = position;
             RightHandedPosition = new Vector3(position.x, position.z, position.y);
@@ -35,6 +36,11 @@ namespace Bakhanov.VoxelSet{
         public Point(ulong id, Vector3 position, float confidenceValue, float colliderRadius) : this(id, position, confidenceValue)
         {
             ColliderRadius = colliderRadius;
+        }
+
+        public Point(ulong id, Vector3 position, float confidenceValue, Vector3 cameraDirection, int version) : this(id, position, confidenceValue, cameraDirection)
+        {
+            Version = version;
         }
         #endregion
 

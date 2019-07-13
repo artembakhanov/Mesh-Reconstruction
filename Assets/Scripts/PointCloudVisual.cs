@@ -17,11 +17,14 @@ public class PointCloudVisual : MonoBehaviour
     public Material[] voxelMaterials;
     public GameObject Ball;
     public bool useRealColors = false;
+    public bool online2;
+    public bool pointsInsideSphere;
+    public float sphereMaxRadius = 400f;
     public GameObject cube;
 
     private ParticleSystem cloudSystem;
     private GameObject meshObject;
-    private VoxelSet VoxelSet = new VoxelSet(0.2f) { CheckRadix = true };
+    private VoxelSet1 VoxelSet;
 
     private Dictionary<ulong, float> confValues = new Dictionary<ulong, float>();
     private Dictionary<ulong, int> indexes = new Dictionary<ulong, int>();
@@ -37,6 +40,79 @@ public class PointCloudVisual : MonoBehaviour
     private bool particlesShown = true;
     private bool online = false;
     private bool drawVoxels = true;
+
+    void Start()
+    {
+        aRPointCloudManager = FindObjectOfType<ARPointCloudManager>();
+
+        cloudSystem = GetComponent<ParticleSystem>();
+        aRPointCloudManager.pointCloudsChanged += CloudUpdate;
+        color = cloudSystem.main.startColor.color;
+        size = cloudSystem.main.startSize.constant;
+        VoxelSet = new VoxelSet1(0.02f) { CheckRadix = true, Online2 = online2 };
+
+        ReadFle();
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(Vector3.right * size, Vector3.zero);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(Vector3.up * size, Vector3.zero);
+
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(Vector3.forward * size, Vector3.zero);
+        Gizmos.color = Color.white;
+    }
+
+    private void CloudUpdate(ARPointCloudChangedEventArgs obj)
+    {
+        if (!(Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Stationary))
+            return;
+
+        // here we use only the first element in array updated
+        if (obj.updated.Count == 0)
+            return;
+
+        var updated = obj.updated[0];
+        for (int i = 0; i < updated.positions.Length; ++i)
+        {
+
+            //if (Vector3.Distance(updated.positions[i], Camera.current.transform.position) < maxDistance)
+            if (CheckPoint(updated.positions[i]))
+                VoxelSet.AddPoint(updated.identifiers[i], updated.positions[i], updated.confidenceValues[i], Camera.current.transform.forward, true);
+        }
+
+        if (particlesShown)
+            cloudSystem.SetParticles(VoxelSet.GetParticles().ToArray());
+        if (online)
+            Mesh();
+
+
+        Consts.particles = VoxelSet.GetParticles();
+        UpdateDebugInfo();
+        if (drawVoxels)
+            DrawVoxels();
+    }
+
+    private bool CheckPoint(Vector3 position)
+    {
+        if (Vector3.Distance(position, Camera.current.transform.position) > maxDistance)
+            return false;
+        if (pointsInsideSphere)
+        {
+            Vector2 pointOnScreen = Camera.current.WorldToScreenPoint(position);
+            Vector2 screenCenter = new Vector2(Screen.width / 2, Screen.height / 2);
+            Debug.Log($"{Screen.width}, {Screen.height}, {pointOnScreen}, {Vector2.Distance(pointOnScreen, screenCenter)}");
+            
+            if (Vector2.Distance(pointOnScreen, screenCenter) > sphereMaxRadius)
+                return false;
+        }
+
+        return true;
+    }
 
     public void Clear()
     {
@@ -64,7 +140,7 @@ public class PointCloudVisual : MonoBehaviour
 
     public void ReadFle()
     {
-        string filePath = "D:\\Unity Projects\\ARTest 3\\startpoints8.txt";
+        string filePath = "D:\\Unity Projects\\ARTest 3\\startpoints9.txt";
         if (!File.Exists(filePath)) return;
 
         string[] lines = File.ReadAllLines(filePath);
@@ -182,7 +258,7 @@ public class PointCloudVisual : MonoBehaviour
     {
         DeleteOldVoxels();
         var voxels = VoxelSet.GetVoxels();
-        float voxelSize = VoxelSet.MaxColliderRadius;
+        float voxelSize = VoxelSet1.MaxColliderRadius;
         print("Voxels Start!");
         foreach (var voxel in voxels)
         {
@@ -214,37 +290,14 @@ public class PointCloudVisual : MonoBehaviour
         }
     }
 
-    void Start()
-    {
-        cloudSystem = GetComponent<ParticleSystem>();
-        aRPointCloudManager.pointCloudsChanged += CloudUpdate;
-        color = cloudSystem.main.startColor.color;
-        size = cloudSystem.main.startSize.constant;
-
-        ReadFle();
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(Vector3.right * size, Vector3.zero);
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(Vector3.up * size, Vector3.zero);
-
-        Gizmos.color = Color.blue;
-        Gizmos.DrawLine(Vector3.forward * size, Vector3.zero);
-        Gizmos.color = Color.white;
-    }
-
     private void ComputeMesh()
     {
         CrustMeshCreator meshCreator1 = new CrustMeshCreator(VoxelSet.GetBigPoints().ToArray());
         IPDMeshCreator meshCreator = new IPDMeshCreator(VoxelSet);
         int[] triangles = meshCreator.ComputeMeshTriangles();//meshCreator.ComputeMeshTriangles(radius: radius);        
 
-        StartCoroutine(DrawMesh(triangles));
-        //DrawMesh1(triangles);
+        //StartCoroutine(DrawMesh(triangles));
+        DrawMesh1(triangles);
     }
 
     private void DrawMesh1(int[] triangles)
@@ -273,7 +326,7 @@ public class PointCloudVisual : MonoBehaviour
 
         for (int i = 0; i < triangles.Length / 3; i++)
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(1f);
             nTriangles.Add(triangles[i * 3]);
             nTriangles.Add(triangles[i * 3 + 1]);
             nTriangles.Add(triangles[i * 3 + 2]);
@@ -298,34 +351,7 @@ public class PointCloudVisual : MonoBehaviour
         //meshObject.AddComponent<MeshCollider>();
         //meshObject.GetComponent<MeshCollider>().sharedMesh = mesh;
         //meshObject.GetComponent<MeshCollider>().convex = false;
-    }
-
-    private void CloudUpdate(ARPointCloudChangedEventArgs obj)
-    {
-        if (!(Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Stationary))
-            return;
-
-        // here we use only the first element in array updated
-        if (obj.updated.Count == 0)
-            return;
-
-        var updated = obj.updated[0];
-        for (int i = 0; i < updated.positions.Length; ++i) {
-            if (Vector3.Distance(updated.positions[i], Camera.current.transform.position) < maxDistance)
-                VoxelSet.AddPoint(updated.identifiers[i], updated.positions[i], updated.confidenceValues[i], Camera.current.transform.forward, true);
-        }
-
-        if (particlesShown)
-            cloudSystem.SetParticles(VoxelSet.GetParticles().ToArray());
-        if (online)
-            Mesh();
-            
-
-        Consts.particles = VoxelSet.GetParticles();
-        UpdateDebugInfo();
-        if (drawVoxels)
-           DrawVoxels();
-    }
+    }   
 
     private void UpdateDebugInfo()
     {

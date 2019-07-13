@@ -26,7 +26,7 @@ public class Face
     public int GetRelativePosition(Vector3 point)
     {
         float pos = Vector3.Dot(point, normal) + D;
-        if (pos < 1e-5f && pos > -1e-5f) return 0;
+        if (pos < 1e-7f && pos > -1e-7f) return 0;
         else return Math.Sign(pos);
     }
 }

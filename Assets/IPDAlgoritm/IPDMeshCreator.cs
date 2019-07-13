@@ -11,10 +11,10 @@ public class IPDMeshCreator
     private int findAPCounter = 0;
 
     private List<Point> PointCloud = new List<Point>();
-    private Bakhanov.VoxelSet.VoxelSet VoxelSet;
+    private Bakhanov.VoxelSet.VoxelSet1 VoxelSet;
     private List<int> meshTriangles = new List<int>();
-
-    public IPDMeshCreator(Bakhanov.VoxelSet.VoxelSet voxelSet)
+    
+    public IPDMeshCreator(Bakhanov.VoxelSet.VoxelSet1 voxelSet)
     {
         VoxelSet = voxelSet;
         UpdatePointCloud();
@@ -43,6 +43,7 @@ public class IPDMeshCreator
         HashSet<Edge> edges = new HashSet<Edge>();
         HashSet<Edge> fixedEdges = new HashSet<Edge>();
         HashSet<Edge> boundaryEdges = new HashSet<Edge>();
+        HashSet<int> fixedVertices = new HashSet<int>();
         List<Triangle> triangles = new List<Triangle>();
 
         Debug.Log("Here start searching a seed triangle");
@@ -53,14 +54,13 @@ public class IPDMeshCreator
         {
             Edge edge_ij = aeq.Dequeue(); // current edge
             if (fixedEdges.Contains(edge_ij) || boundaryEdges.Contains(edge_ij)) continue; // if it is not active
-            int? activePoint = FindActivePoint(edge_ij, edges, triangles, fixedEdges); // find the best active point 
+            int? activePoint = FindActivePoint(edge_ij, edges, triangles, fixedEdges, fixedVertices); // find the best active point 
             if (activePoint != null)
             {
-                AddTriangle(edge_ij, (int)activePoint, aeq, edges, fixedEdges, triangles);
+                AddTriangle(edge_ij, (int)activePoint, aeq, edges, fixedEdges, triangles, fixedVertices);
             } else
             {
                 boundaryEdges.Add(edge_ij);
-
             }
         }
 
@@ -146,8 +146,8 @@ public class IPDMeshCreator
 
         ConvexPolyhedron polyhedron = new ConvexPolyhedron();
         polyhedron.AddFace(N, p_m + s * N); // top face
-        polyhedron.AddFace(-N, p_m - s * N); // bottom face
-        polyhedron.AddFace(-Vector3.Cross(N, ip - p).normalized, ip); // face containing pi
+        polyhedron.AddFace(-N, p_m - s * N); // bottom face - 
+        polyhedron.AddFace(-Vector3.Cross(N, ip - p).normalized, ip); // face containing pi - 
         polyhedron.AddFace(Vector3.Cross(N, jp - p).normalized, jp); // face containing pj  
         Vector3 N5 = Vector3.Cross(jp - ip, N).normalized;
         polyhedron.AddFace(N5, p_m + s * N5);
@@ -163,8 +163,9 @@ public class IPDMeshCreator
             Edge left = new Edge(point, i, Vector3.back);
             Edge right = new Edge(point, j, Vector3.back);
 
-            if (edges.Contains(left)) {
-                float angleLeft = Vector3.Angle(jp-ip, PointCloud[point].Position - ip);
+            if (edges.Contains(left))
+            {
+                float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
                 if (angleLeft < minAngleLeft)
                 {
                     minAngleLeft = angleLeft;
@@ -174,7 +175,7 @@ public class IPDMeshCreator
             }
             if (edges.Contains(right))
             {
-                float angleRight = Vector3.Angle(ip-jp, PointCloud[point].Position - jp);
+                float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
                 if (angleRight < minAngleRight)
                 {
                     minAngleRight = angleRight;
@@ -206,7 +207,7 @@ public class IPDMeshCreator
     /// <param name="edges">Set of existing edges</param>
     /// <param name="triangles">List of existing triangles</param>
     /// <returns>null if there is no active point, the index of the point</returns>
-    private int? FindActivePoint(Edge e_ij, HashSet<Edge> edges, List<Triangle> triangles, HashSet<Edge> fixedEdges)
+    private int? FindActivePoint(Edge e_ij, HashSet<Edge> edges, List<Triangle> triangles, HashSet<Edge> fixedEdges, HashSet<int> fixedVertices)
     {
         findAPCounter++;
         int ap1, ap2;
@@ -218,11 +219,11 @@ public class IPDMeshCreator
             PointCloud[e_ij.vertex1].Position,
             PointCloud[e_ij.vertex2].Position
         };
-        if (ap1 != -1) allowedPoints.Add(PointCloud[ap1].Position);
-        if (ap2 != -1) allowedPoints.Add(PointCloud[ap2].Position);
+        if (ap1 != -1 && !fixedVertices.Contains(ap1)) allowedPoints.Add(PointCloud[ap1].Position);
+        if (ap2 != -1 && !fixedVertices.Contains(ap2)) allowedPoints.Add(PointCloud[ap2].Position);
 
-        var points = VoxelSet.GetInnerPoints(p, (PointCloud[e_ij.vertex1].Position + PointCloud[e_ij.vertex2].Position) / 2);
-        //var points = GetInnerPoints(p, innerPoints);
+        //var points = VoxelSet.GetInnerPoints(p, (PointCloud[e_ij.vertex1].Position + PointCloud[e_ij.vertex2].Position) / 2);
+        var points = GetInnerPoints(p, innerPoints);
         float sum = float.PositiveInfinity;
         int? activePoint = null;
         HashSet<Triangle> tr = new HashSet<Triangle>();
@@ -233,7 +234,7 @@ public class IPDMeshCreator
         foreach (var m in points)
         {
             float currentSum = CalculateEnergy(e_ij.vertex1, e_ij.vertex2, e_ij.vertex3, m);
-            if (PointCloud[m].status == PointStatus.ACTIVE && currentSum < sum && GeomIntegrity(e_ij, m, tr, allowedPoints.ToArray(), fixedEdges)) // if do not intersect other triangles
+            if (PointCloud[m].status == PointStatus.ACTIVE && currentSum < sum && GeomIntegrity(e_ij, m, tr, allowedPoints.ToArray(), fixedEdges, fixedVertices)) // if do not intersect other triangles
             {
                 activePoint = m;
                 sum = currentSum;
@@ -262,14 +263,14 @@ public class IPDMeshCreator
     /// <param name="m">Candidate</param>
     /// <param name="triangles">List of existing triangles</param>
     /// <returns>true if geometry integrity holds, false otherwise</returns>
-    private bool GeomIntegrity(Edge e_ij, int m, HashSet<Triangle> triangles, Vector3[] allowedPoints, HashSet<Edge> fixedEdges)
+    private bool GeomIntegrity(Edge e_ij, int m, HashSet<Triangle> triangles, Vector3[] allowedPoints, HashSet<Edge> fixedEdges, HashSet<int> fixedVertices)
     {
         
         Triangle candidate = new Triangle(PointCloud[e_ij.vertex1].Position, PointCloud[e_ij.vertex2].Position, PointCloud[m].Position, new int[] { e_ij.vertex1, e_ij.vertex2, m });
 
         foreach (var triangle in triangles)
         {
-            if (!triangle.GeomIntegrity(candidate, allowedPoints, fixedEdges))
+            if (!triangle.GeomIntegrity(candidate, allowedPoints, fixedEdges, fixedVertices))
                 return false;
         }
 
@@ -291,6 +292,7 @@ public class IPDMeshCreator
         float L_ij = SqrDistance(i, j);
         float L_im = SqrDistance(i, m);
         float L_jm = SqrDistance(j, m);
+       // if (L_im > 1000f || L_jm > 1000f) return float.PositiveInfinity;
         float L_ik = SqrDistance(i, k);
         float L_jk = SqrDistance(j, k);
         float A_ijm = FindTriangleArea(i, j, m);
@@ -330,7 +332,7 @@ public class IPDMeshCreator
         return Vector3.Distance(PointCloud[a].Position, PointCloud[b].Position);
     }
     
-    private void AddTriangle(Edge edge, int point, Queue<Edge> aeq, HashSet<Edge> edges, HashSet<Edge> fixedEdges, List<Triangle> triangles)
+    private void AddTriangle(Edge edge, int point, Queue<Edge> aeq, HashSet<Edge> edges, HashSet<Edge> fixedEdges, List<Triangle> triangles, HashSet<int> fixedVertices)
     {
         Triangle triangle = new Triangle(PointCloud[point].Position, PointCloud[edge.vertex1].Position, PointCloud[edge.vertex2].Position, new int[] { point, edge.vertex1, edge.vertex2 });
         PointCloud[point].triangles.Add(triangle);
@@ -354,6 +356,8 @@ public class IPDMeshCreator
 
         Edge edge1 = new Edge(edge.vertex1, point, edge.vertex2, normal, Distance(edge.vertex1, point));
         Edge edge2 = new Edge(edge.vertex2, point, edge.vertex1, normal, Distance(edge.vertex2, point));
+
+        fixedEdges.Add(edge);
 
         if (!edges.Contains(edge1))
         {
@@ -384,6 +388,10 @@ public class IPDMeshCreator
         PointCloud[edge.vertex1].RemoveActiveEdge();
         PointCloud[edge.vertex2].RemoveActiveEdge();
         triangles.Add(triangle);
+
+        if (PointCloud[edge.vertex1].status == PointStatus.FIXED) fixedVertices.Add(edge.vertex1);
+        if (PointCloud[edge.vertex2].status == PointStatus.FIXED) fixedVertices.Add(edge.vertex2);
+        if (PointCloud[point].status == PointStatus.FIXED) fixedVertices.Add(point);
     }
 
     /// <summary>
