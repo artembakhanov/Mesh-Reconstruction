@@ -8,8 +8,8 @@ using UnityEngine.XR.ARFoundation;
 public class PointCloudVisualizer : MonoBehaviour
 {
     public bool ShowParticles = true;
-    public float ParticleSize = 0.02f;
-    public Color ParticleColor = new Color(0, 255, 32);
+    public float ParticleSize = 0.005f;
+    public Color ParticleColor = new Color(0, 255, 225);
     private ParticleSystem particleSystem;
     private PointStorage pointStorage;
 
@@ -18,6 +18,10 @@ public class PointCloudVisualizer : MonoBehaviour
     {
         particleSystem = GetComponent<ParticleSystem>();
         pointStorage = GetComponent<PointStorage>();
+
+        var main = particleSystem.main;
+        main.startSize = ParticleSize;
+        main.startColor = ParticleColor;
 
         pointStorage.voxelSet.UpdateEvent += VoxelSet_UpdateEvent;
      }
@@ -36,24 +40,11 @@ public class PointCloudVisualizer : MonoBehaviour
         {
             //particles[i].color = gradient.Evaluate(Vector3.Distance(camPos, positions[i]) * d);
             particles[i].position = points[i].Position;
-            if (pointStorage.voxelSet.version - points[i].Version == 1)
-                particles[i].remainingLifetime = 1e5f - 0.01f * i;
-            else
-                particles[i].remainingLifetime = 1e5f - 5f;
+            //if (pointStorage.voxelSet.version - points[i].Version == 1)
+            //    particles[i].remainingLifetime = 1e5f - 0.01f * i;
+            //else
+            //    particles[i].remainingLifetime = 1e5f - 5f;
         }
         particleSystem.SetParticles(particles);
-
-
-        //ParticleSystem.Particle[] particles = new ParticleSystem.Particle[points.Count];
-        //for (int i = 0; i < points.Count; ++i) {
-        //    //particles[i] = new ParticleSystem.Particle
-        //    //{
-        //    //    startColor = ParticleColor,
-        //    //    startSize = ParticleSize,
-        //    //    position = points[i].Position,
-        //    //    remainingLifetime = 10000f
-        //    //};
-        //}
-        //particleSystem.SetParticles(particles);
     }
 }

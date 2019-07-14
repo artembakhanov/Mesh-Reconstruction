@@ -293,11 +293,11 @@ public class PointCloudVisual : MonoBehaviour
     private void ComputeMesh()
     {
         CrustMeshCreator meshCreator1 = new CrustMeshCreator(VoxelSet.GetBigPoints().ToArray());
-        IPDMeshCreator meshCreator = new IPDMeshCreator(VoxelSet);
-        int[] triangles = meshCreator.ComputeMeshTriangles();//meshCreator.ComputeMeshTriangles(radius: radius);        
+       // IPDMeshCreator meshCreator = new IPDMeshCreator(VoxelSet);
+        //int[] triangles = meshCreator.ComputeMeshTriangles();//meshCreator.ComputeMeshTriangles(radius: radius);        
 
         //StartCoroutine(DrawMesh(triangles));
-        DrawMesh1(triangles);
+        //DrawMesh1(triangles);
     }
 
     private void DrawMesh1(int[] triangles)

@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using Bakhanov.VoxelSet;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class NewPointsArgs
 {
-    public List<Vector3> newPoints; 
+    public List<int> newPoints; 
 
-    public NewPointsArgs(List<Vector3> newPoints)
+    public NewPointsArgs(List<int> newPoints)
     {
         this.newPoints = newPoints;
     }

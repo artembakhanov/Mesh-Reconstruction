@@ -7,28 +7,44 @@ using System.IO;
 
 public class IPDMeshCreator
 {
+    public bool influenceRegion2 = false;
+    public bool smartUpdate = false;
     private int buildPCounter = 0;
     private int findAPCounter = 0;
 
     private List<Point> PointCloud = new List<Point>();
-    private Bakhanov.VoxelSet.VoxelSet1 VoxelSet;
+    private VoxelSet VoxelSet;
     private List<int> meshTriangles = new List<int>();
-    
-    public IPDMeshCreator(Bakhanov.VoxelSet.VoxelSet1 voxelSet)
+
+    Queue<Edge> aeq = new Queue<Edge>(); // active-edge queue
+    HashSet<Edge> edges = new HashSet<Edge>();
+    HashSet<Edge> fixedEdges = new HashSet<Edge>();
+    HashSet<Edge> boundaryEdges = new HashSet<Edge>();
+    HashSet<int> fixedVertices = new HashSet<int>();
+    List<Triangle> triangles = new List<Triangle>();
+    List<int> newActivePoints = new List<int>();
+    private float regionAngle;
+
+    public IPDMeshCreator(VoxelSet voxelSet)
     {
         VoxelSet = voxelSet;
-        UpdatePointCloud();
     }
 
-    public void UpdatePointCloud()
+    public IPDMeshCreator(VoxelSet voxelSet, bool smartUpdate) : this(voxelSet)
     {
-        PointCloud.Clear();
-        var points = VoxelSet.GetPoints();
-        foreach (var point in points)
-        {
-            PointCloud.Add(new Point(point.RightHandedPosition));
-        }
+        this.smartUpdate = smartUpdate;
     }
+
+    public IPDMeshCreator(VoxelSet voxelSet, bool smartUpdate, bool influenceRegion2) : this(voxelSet, smartUpdate)
+    {
+        this.influenceRegion2 = influenceRegion2;
+    }
+
+    public IPDMeshCreator(VoxelSet voxelSet, bool smartUpdate, bool influenceRegion2, float regionAngle) : this(voxelSet, smartUpdate, influenceRegion2)
+    {
+        this.regionAngle = regionAngle;
+    }
+
 
     /// <summary>
     /// Generate all triangles for the point cloud.
@@ -36,18 +52,56 @@ public class IPDMeshCreator
     /// <returns>Array of triangles that is used by standard unity mesh renderer.</returns>
     public int[] ComputeMeshTriangles() 
     {
-        meshTriangles.Clear();
+
+        if (!smartUpdate)
+        {
+            meshTriangles.Clear();
+            aeq = new Queue<Edge>(); // active-edge queue
+            edges = new HashSet<Edge>();
+            fixedEdges = new HashSet<Edge>();
+            boundaryEdges = new HashSet<Edge>();
+            fixedVertices = new HashSet<int>();
+            triangles = new List<Triangle>();
+            foreach (var point in VoxelSet.Points)
+            {
+                PointCloud.Add(new Point(point.RightHandedPosition));
+            }
+        } else
+        {
+            var temp = PointCloud;
+            var lcount = VoxelSet.lastActivePoints.Count;
+
+            for (int i = 0; i < temp.Count; i++)
+            {
+                Point p = temp[i];
+                if (p.status == PointStatus.ACTIVE)
+                {
+                    newActivePoints.Add(i);
+                    VoxelSet.lastActivePoints.Add(i);
+                }
+            }
+
+            var points = VoxelSet.Points;
+            for (int i = 0; i < lcount; ++i)
+            {
+                PointCloud.Add(new Point(points[VoxelSet.lastActivePoints[i]].RightHandedPosition));
+                newActivePoints.Add(VoxelSet.lastActivePoints[i]);
+            }
+
+            foreach (var edge in boundaryEdges)
+            {
+                aeq.Enqueue(edge);
+            }
+
+            boundaryEdges.Clear();
+        }
+
         if (PointCloud.Count < 3) return meshTriangles.ToArray(); //throw new System.Exception("Impossible to generate mesh with less than 3 points!");
 
-        Queue<Edge> aeq = new Queue<Edge>(); // active-edge queue
-        HashSet<Edge> edges = new HashSet<Edge>();
-        HashSet<Edge> fixedEdges = new HashSet<Edge>();
-        HashSet<Edge> boundaryEdges = new HashSet<Edge>();
-        HashSet<int> fixedVertices = new HashSet<int>();
-        List<Triangle> triangles = new List<Triangle>();
 
         Debug.Log("Here start searching a seed triangle");
-        AddSeedTriangle(aeq, edges, triangles); // add first triangle to the mesh
+        if (meshTriangles.Count == 0)
+            AddSeedTriangle(aeq, edges, triangles); // add first triangle to the mesh
 
         Debug.Log("Here start searching other points");
         while (aeq.Count != 0)
@@ -70,7 +124,7 @@ public class IPDMeshCreator
 
     private void SaveInfo(Queue<Edge> aeq, HashSet<Edge> edges, HashSet<Edge> fixedEdges)
     {
-        var points = VoxelSet.GetPoints();
+        var points = VoxelSet.Points;
         string filePath = Application.persistentDataPath + "/mesh.txt";
         string filePath0 = Application.persistentDataPath + "/meshPoints.txt";
         if (!File.Exists(filePath))
@@ -113,9 +167,10 @@ public class IPDMeshCreator
     /// <param name="edge">The edge, which influence region to be foind.</param>
     /// <param name="edges">The set of existing edges.</param>
     /// <returns>Polyhedron object that is the influence region.</returns>
-    private ConvexPolyhedron BuildPolyhedron(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2, out int[] innerPoints)
+    private ConvexPolyhedron BuildPolyhedron(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2, out List<int> innerPoints)
     {
-        buildPCounter++;
+        if (influenceRegion2) return BuildPolyhedron2(edge, edges, out ap1, out ap2, out innerPoints);
+        buildPCounter++; 
         ap1 = -1;
         ap2 = -1;
         int i = edge.vertex1;
@@ -154,7 +209,7 @@ public class IPDMeshCreator
 
         // here it checks whether there are some edges inside the influnce region
         // that are connected to i or j
-        var points = VoxelSet.GetInnerPoints(polyhedron, p_m);
+        var points = VoxelSet.GetInnerPoints(polyhedron, smartUpdate, p_m);
         Vector3? pLeft = null, pRight = null;
         float minAngleLeft = 181f, minAngleRight = 181f;
         foreach (var point in points)
@@ -201,6 +256,93 @@ public class IPDMeshCreator
     }
 
     /// <summary>
+    /// Build open influence region with 3 faces for a given edge.
+    /// </summary>
+    /// <param name="edge">The given edge.</param>
+    /// <param name="edges">All existing edges.</param>
+    /// <param name="ap1">Allowed point 1</param>
+    /// <param name="ap2">Allowed point 2</param>s
+    /// <param name="innerPoints">Points that approximately lie inside the influence region (polyhedron).</param>
+    /// <returns>The polyhedron.</returns>
+    private ConvexPolyhedron BuildPolyhedron2(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2, out List<int> innerPoints)
+    {
+        buildPCounter++;
+        ap1 = -1;
+        ap2 = -1;
+        int i = edge.vertex1;
+        int j = edge.vertex2;
+        int k = edge.vertex3;
+
+        // check if the i and j vertices are chosen correctly
+        if (Vector3.Dot(Vector3.Cross(PointCloud[k].Position - PointCloud[i].Position, PointCloud[k].Position - PointCloud[j].Position), edge.normal) < 0)
+        {
+            i = edge.vertex2;
+            j = edge.vertex1;
+        }
+
+        // positions of i, j and k
+        Vector3 ip = PointCloud[i].Position;
+        Vector3 jp = PointCloud[j].Position;
+        Vector3 kp = PointCloud[k].Position;
+
+        Vector3 n1 = Vector3.Cross(edge.normal, jp - ip).normalized;
+        Vector3 n2 = (Vector3.Cross(n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (ip - jp).normalized, edge.normal)).normalized;
+        Vector3 n3 = Vector3.Cross(edge.normal, n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (jp - ip).normalized).normalized;
+
+        ConvexPolyhedron polyhedron = new ConvexPolyhedron();
+        polyhedron.AddFace(n1, ip);
+        polyhedron.AddFace(n2, ip);
+        polyhedron.AddFace(n3, jp);
+
+        innerPoints = VoxelSet.GetInnerPoints(polyhedron, false, (ip + jp) / 2);
+        Vector3? pLeft = null, pRight = null;
+        float minAngleLeft = 181f, minAngleRight = 181f;
+        foreach (var point in innerPoints)
+        {
+            if (point == i || point == j) continue;
+            Edge left = new Edge(point, i, Vector3.back);
+            Edge right = new Edge(point, j, Vector3.back);
+
+            if (edges.Contains(left))
+            {
+                float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
+                if (angleLeft < minAngleLeft)
+                {
+                    minAngleLeft = angleLeft;
+                    pLeft = PointCloud[point].Position;
+                    ap1 = point;
+                }
+            }
+            if (edges.Contains(right))
+            {
+                float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
+                if (angleRight < minAngleRight)
+                {
+                    minAngleRight = angleRight;
+                    pRight = PointCloud[point].Position;
+                    ap2 = point;
+                }
+            }
+        }
+
+        ConvexPolyhedron p = new ConvexPolyhedron();
+        p.AddFace(n1, ip);
+
+        if (pLeft == null)
+            p.AddFace(n2, ip);
+        else
+            p.AddFace(-Vector3.Cross((Vector3)pLeft - ip, edge.normal).normalized, ip);
+
+        if (pRight == null)
+            p.AddFace(n3, jp);
+        else
+            p.AddFace(Vector3.Cross((Vector3)pLeft - jp, edge.normal).normalized, jp);
+
+
+        return p;
+    }
+
+    /// <summary>
     /// Find the most appropriate active point for the given edge.
     /// </summary>
     /// <param name="e_ij">Edge</param>
@@ -212,7 +354,7 @@ public class IPDMeshCreator
         findAPCounter++;
         int ap1, ap2;
 
-        int[] innerPoints;
+        List<int> innerPoints;
         ConvexPolyhedron p = BuildPolyhedron(e_ij, edges, out ap1, out ap2, out innerPoints);
         List<Vector3> allowedPoints = new List<Vector3>
         {
@@ -244,10 +386,10 @@ public class IPDMeshCreator
         return activePoint;
     }
 
-    private List<int> GetInnerPoints(ConvexPolyhedron p, int[] innerPoints)
+    private List<int> GetInnerPoints(ConvexPolyhedron p, List<int> innerPoints)
     {
         List<int> points = new List<int>();
-        for (int k = 0; k < innerPoints.Length; ++k)
+        for (int k = 0; k < innerPoints.Count; ++k)
         {
             if (p.IsPointInside(PointCloud[innerPoints[k]].Position))
                 points.Add(innerPoints[k]);

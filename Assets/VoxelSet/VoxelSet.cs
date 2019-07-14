@@ -18,7 +18,8 @@ public class VoxelSet
     public int version = 0;
     private static float VoxelSize = 0.05f;
     private static ulong Counter = ulong.MaxValue;
-    private List<Vector3> newActivePoints = new List<Vector3>(); // right-handed positions
+    private List<Point> newActivePoints = new List<Point>(); // right-handed positions
+    public List<int> lastActivePoints = new List<int>(); // right-handed positions
     public static float MaxColliderRadius
     {
         get { return VoxelSize / 2f; }
@@ -65,6 +66,18 @@ public class VoxelSet
             AddPoint(point, true);
         }
     }
+
+    public Vector3[] Vertices()
+    {
+        Vector3[] vertices = new Vector3[Points.Count];
+
+        for (int i = 0; i < Points.Count; i++)
+        {
+            vertices[i] = Points[i].Position;
+        }
+
+        return vertices;
+    }
     
     #region Add
     /// <summary>
@@ -105,7 +118,7 @@ public class VoxelSet
             if (checkCol)
                 return RemoveCollisions(point);
             else
-                newActivePoints.Add(point.RightHandedPosition);
+                newActivePoints.Add(point);
         }
        // else if (VoxelVersions[GetKey(point.Position)] == version)
          //   newActivePoints.Add(point.RightHandedPosition);
@@ -155,10 +168,18 @@ public class VoxelSet
 
     public void Update()
     {
+        List<int> newActivePoints = new List<int>();
+        for (var i = 0; i < Points.Count; ++i)
+        {
+            if (version == Points[i].Version)
+            {
+                newActivePoints.Add(i);
+            }
+        }
         version++;
         NewActivePointsEvent?.Invoke(new NewPointsArgs(newActivePoints));
         UpdateEvent?.Invoke();
-        newActivePoints = new List<Vector3>();
+        lastActivePoints = newActivePoints;
     }
 
     /// <summary>
@@ -169,6 +190,60 @@ public class VoxelSet
         IdIndexPairs.Clear();
         Points = new List<Point>();
         Voxels = new Dictionary<Vector3Int, List<int>>();
+    }
+
+    /// <summary>
+    /// Get points that are inside a polyhedron.
+    /// </summary>
+    /// <param name="p">The polyhedron.</param>
+    /// <returns>The indices of the points.</returns>
+    public List<int> GetInnerPoints(ConvexPolyhedron p, bool smartUpdate, Vector3? seedPoint = null)
+    {
+        List<int> points = new List<int>();
+
+        if (seedPoint != null)
+        {
+            if (smartUpdate)
+            {
+                for (int k = 0; k < lastActivePoints.Count; ++k)
+                {
+                    if (p.IsPointInside(Points[lastActivePoints[k]].RightHandedPosition))
+                    {
+                        points.Add(lastActivePoints[k]);
+                    }
+                }
+            }
+            else
+            {
+                for (int k = 0; k < Points.Count; ++k)
+                {
+                    if (p.IsPointInside(Points[k].RightHandedPosition))
+                        points.Add(k);
+                }
+            }
+        }
+        else
+        {
+            Vector3 _seedPoint = (Vector3)seedPoint;
+            Vector3Int seedKey = GetKey(new Vector3(_seedPoint.x, _seedPoint.z, _seedPoint.y));
+            for (int i = -2; i <= 2; ++i)
+            {
+                for (int j = -2; j <= 2; ++j)
+                {
+                    for (int l = -2; l <= 2; ++l)
+                    {
+                        var voxelPoints = GetVoxelForEditing(seedKey + new Vector3Int(i, j, l));
+                        for (int k = 0; k < voxelPoints.Count; ++k)
+                        {
+                            if (p.IsPointInside(Points[voxelPoints[k]].RightHandedPosition))
+                                points.Add(voxelPoints[k]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return points;
     }
 
     private bool RemoveCollisions(Point point)
@@ -195,7 +270,7 @@ public class VoxelSet
         }
 
         if (CheckVoxelVersion(GetKey(point.Position)))
-            newActivePoints.Add(point.RightHandedPosition);
+            newActivePoints.Add(point);
 
         return true;
     }
