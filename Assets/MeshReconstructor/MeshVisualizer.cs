@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using Bakhanov.VoxelSet;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 [RequireComponent(typeof(PointStorage))]
@@ -22,6 +24,8 @@ public class MeshVisualizer : MonoBehaviour
         smartUpdate = pointStorage.smartUpdate;
 
         IPDMeshCreator = new IPDMeshCreator(pointStorage.voxelSet, smartUpdate, influenceRegion2, regionAngle);
+
+        ReadFle();
     }
 
     private void VoxelSet_NewActivePointsEvent(NewPointsArgs e)
@@ -49,6 +53,24 @@ public class MeshVisualizer : MonoBehaviour
         meshObject.transform.localScale = new Vector3(1, 1, 1);
         meshObject.GetComponent<MeshFilter>().mesh = mesh;
         meshObject.GetComponent<MeshRenderer>().material = meshMaterial;
+    }
+
+    public void ReadFle()
+    {
+        string filePath = "D:\\Unity Projects\\ARTest 3\\startpoints8.txt";
+        if (!File.Exists(filePath)) return;
+
+        string[] lines = File.ReadAllLines(filePath);
+
+        foreach (var line in lines)
+        {
+            float x = float.Parse(line.Split(' ')[0]);
+            float y = float.Parse(line.Split(' ')[1]);
+            float z = float.Parse(line.Split(' ')[2]);
+            pointStorage.voxelSet.AddPoint(1, new Vector3(x, y, z), 1, Vector3.forward, false);
+        }
+        //VoxelSet_NewActivePointsEvent(null);
+        pointStorage.voxelSet.Update();
     }
 
     // Update is called once per frame

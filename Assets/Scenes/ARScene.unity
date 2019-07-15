@@ -12943,7 +12943,7 @@ MonoBehaviour:
   minConfidenceValue: 0.2
   filterPointsFarFromCamera: 1
   maxDistanceFromCamera: 1
-  smartUpdate: 1
+  smartUpdate: 0
 --- !u!114 &1929346171
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12956,7 +12956,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 219d3f5567a732044adcf01153fea87d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  smartUpdate: 1
+  drawMesh: 1
+  influenceRegion2: 1
+  regionAngle: 45
+  smartUpdate: 0
   meshMaterial: {fileID: 2100000, guid: 4c0a9553b8887d043b465910b01bf4f5, type: 2}
 --- !u!1 &1985308836
 GameObject:

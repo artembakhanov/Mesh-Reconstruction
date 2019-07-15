@@ -52,7 +52,6 @@ public class IPDMeshCreator
     /// <returns>Array of triangles that is used by standard unity mesh renderer.</returns>
     public int[] ComputeMeshTriangles() 
     {
-
         if (!smartUpdate)
         {
             meshTriangles.Clear();
@@ -285,7 +284,7 @@ public class IPDMeshCreator
         Vector3 jp = PointCloud[j].Position;
         Vector3 kp = PointCloud[k].Position;
 
-        Vector3 n1 = Vector3.Cross(edge.normal, jp - ip).normalized;
+        Vector3 n1 = -Vector3.Cross(edge.normal, jp - ip).normalized;
         Vector3 n2 = (Vector3.Cross(n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (ip - jp).normalized, edge.normal)).normalized;
         Vector3 n3 = Vector3.Cross(edge.normal, n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (jp - ip).normalized).normalized;
 
@@ -293,37 +292,37 @@ public class IPDMeshCreator
         polyhedron.AddFace(n1, ip);
         polyhedron.AddFace(n2, ip);
         polyhedron.AddFace(n3, jp);
-
+                
         innerPoints = VoxelSet.GetInnerPoints(polyhedron, false, (ip + jp) / 2);
         Vector3? pLeft = null, pRight = null;
         float minAngleLeft = 181f, minAngleRight = 181f;
-        foreach (var point in innerPoints)
-        {
-            if (point == i || point == j) continue;
-            Edge left = new Edge(point, i, Vector3.back);
-            Edge right = new Edge(point, j, Vector3.back);
+        //foreach (var point in innerPoints)
+        //{
+        //    if (point == i || point == j) continue;
+        //    Edge left = new Edge(point, i, Vector3.back);
+        //    Edge right = new Edge(point, j, Vector3.back);
 
-            if (edges.Contains(left))
-            {
-                float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
-                if (angleLeft < minAngleLeft)
-                {
-                    minAngleLeft = angleLeft;
-                    pLeft = PointCloud[point].Position;
-                    ap1 = point;
-                }
-            }
-            if (edges.Contains(right))
-            {
-                float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
-                if (angleRight < minAngleRight)
-                {
-                    minAngleRight = angleRight;
-                    pRight = PointCloud[point].Position;
-                    ap2 = point;
-                }
-            }
-        }
+        //    if (edges.Contains(left))
+        //    {
+        //        float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
+        //        if (angleLeft < minAngleLeft)
+        //        {
+        //            minAngleLeft = angleLeft;
+        //            pLeft = PointCloud[point].Position;
+        //            ap1 = point;
+        //        }
+        //    }
+        //    if (edges.Contains(right))
+        //    {
+        //        float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
+        //        if (angleRight < minAngleRight)
+        //        {
+        //            minAngleRight = angleRight;
+        //            pRight = PointCloud[point].Position;
+        //            ap2 = point;
+        //        }
+        //    }
+        //}
 
         ConvexPolyhedron p = new ConvexPolyhedron();
         p.AddFace(n1, ip);
@@ -336,7 +335,7 @@ public class IPDMeshCreator
         if (pRight == null)
             p.AddFace(n3, jp);
         else
-            p.AddFace(Vector3.Cross((Vector3)pLeft - jp, edge.normal).normalized, jp);
+            p.AddFace(Vector3.Cross((Vector3)pRight - jp, edge.normal).normalized, jp);
 
 
         return p;
