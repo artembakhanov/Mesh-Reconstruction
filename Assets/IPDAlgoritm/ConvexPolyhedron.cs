@@ -35,7 +35,7 @@ public class ConvexPolyhedron
     /// True, if it is inside (also if it belongs to a face
     /// False, otherwise
     /// </returns>
-    public bool IsPointInside(Vector3 position)
+    public bool IsPointInside(Vector3 position, bool influenceRegion2 = false)
     {
         int lastSign = -2;
         foreach (var face in Faces)
@@ -43,6 +43,7 @@ public class ConvexPolyhedron
             int curSign = face.GetRelativePosition(position);
             if (curSign == 0)
                 continue;
+            if (influenceRegion2 && curSign == 1) return false;
             if (lastSign == -2 || lastSign == curSign)
                 lastSign = curSign; 
             else

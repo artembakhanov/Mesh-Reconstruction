@@ -7,12 +7,15 @@ public class Face
     public readonly Vector3 point;
     public readonly Vector3 normal;
     public readonly float D;
+    public readonly string equation;
 
     public Face(Vector3 normal, Vector3 point)
     {
         this.point = point;
         this.normal = normal;
         this.D = -Vector3.Dot(normal, point);
+
+        this.equation = $"{normal.x}x + {normal.y}y + {normal.z}z + {D} = 0";
     }
 
     /// <summary>
@@ -26,7 +29,7 @@ public class Face
     public int GetRelativePosition(Vector3 point)
     {
         float pos = Vector3.Dot(point, normal) + D;
-        if (pos < 1e-7f && pos > -1e-7f) return 0;
+        if (pos < 1e-5f && pos > -1e-5f) return 0;
         else return Math.Sign(pos);
     }
 }

@@ -9,6 +9,7 @@ public class MeshVisualizer : MonoBehaviour
 {
     public bool drawMesh = true;
     public bool influenceRegion2 = true;
+    public bool energyFunction2 = true;
     public float regionAngle = 45f;
     public bool smartUpdate = true;
     public Material meshMaterial;
@@ -23,7 +24,7 @@ public class MeshVisualizer : MonoBehaviour
 
         smartUpdate = pointStorage.smartUpdate;
 
-        IPDMeshCreator = new IPDMeshCreator(pointStorage.voxelSet, smartUpdate, influenceRegion2, regionAngle);
+        IPDMeshCreator = new IPDMeshCreator(pointStorage.voxelSet, smartUpdate, influenceRegion2, energyFunction2, regionAngle);
 
         ReadFle();
     }
@@ -57,7 +58,7 @@ public class MeshVisualizer : MonoBehaviour
 
     public void ReadFle()
     {
-        string filePath = "D:\\Unity Projects\\ARTest 3\\startpoints8.txt";
+        string filePath = "C:\\Users\\artem\\Unity Projects\\ARTest 3\\startpoints10.txt";
         if (!File.Exists(filePath)) return;
 
         string[] lines = File.ReadAllLines(filePath);
@@ -69,8 +70,8 @@ public class MeshVisualizer : MonoBehaviour
             float z = float.Parse(line.Split(' ')[2]);
             pointStorage.voxelSet.AddPoint(1, new Vector3(x, y, z), 1, Vector3.forward, false);
         }
-        //VoxelSet_NewActivePointsEvent(null);
         pointStorage.voxelSet.Update();
+        //VoxelSet_NewActivePointsEvent(null);
     }
 
     // Update is called once per frame

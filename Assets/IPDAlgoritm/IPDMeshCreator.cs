@@ -8,7 +8,9 @@ using System.IO;
 public class IPDMeshCreator
 {
     public bool influenceRegion2 = false;
+    public bool energyFunction2 = false;
     public bool smartUpdate = false;
+    public bool closedInfluenceRegion2 = true;
     private int buildPCounter = 0;
     private int findAPCounter = 0;
 
@@ -42,6 +44,12 @@ public class IPDMeshCreator
 
     public IPDMeshCreator(VoxelSet voxelSet, bool smartUpdate, bool influenceRegion2, float regionAngle) : this(voxelSet, smartUpdate, influenceRegion2)
     {
+        this.regionAngle = regionAngle;
+    }
+
+    public IPDMeshCreator(VoxelSet voxelSet, bool smartUpdate, bool influenceRegion2, bool energyFunction2, float regionAngle) : this(voxelSet, smartUpdate, influenceRegion2)
+    {
+        this.energyFunction2 = energyFunction2;
         this.regionAngle = regionAngle;
     }
 
@@ -199,6 +207,10 @@ public class IPDMeshCreator
         Vector3 N = edge.normal;
 
         ConvexPolyhedron polyhedron = new ConvexPolyhedron();
+
+        Vector3 n1 = Vector3.Cross(edge.normal, jp - ip).normalized;
+        polyhedron.AddFace(n1, ip); // test
+
         polyhedron.AddFace(N, p_m + s * N); // top face
         polyhedron.AddFace(-N, p_m - s * N); // bottom face - 
         polyhedron.AddFace(-Vector3.Cross(N, ip - p).normalized, ip); // face containing pi - 
@@ -208,7 +220,7 @@ public class IPDMeshCreator
 
         // here it checks whether there are some edges inside the influnce region
         // that are connected to i or j
-        var points = VoxelSet.GetInnerPoints(polyhedron, smartUpdate, p_m);
+        var points = VoxelSet.GetInnerPoints(polyhedron, smartUpdate, influenceRegion2, p_m);
         Vector3? pLeft = null, pRight = null;
         float minAngleLeft = 181f, minAngleRight = 181f;
         foreach (var point in points)
@@ -284,45 +296,49 @@ public class IPDMeshCreator
         Vector3 jp = PointCloud[j].Position;
         Vector3 kp = PointCloud[k].Position;
 
-        Vector3 n1 = -Vector3.Cross(edge.normal, jp - ip).normalized;
-        Vector3 n2 = (Vector3.Cross(n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (ip - jp).normalized, edge.normal)).normalized;
-        Vector3 n3 = Vector3.Cross(edge.normal, n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (jp - ip).normalized).normalized;
+        Vector3 n1 = Vector3.Cross(edge.normal, jp - ip).normalized;
+        Vector3 n3 = (Vector3.Cross(n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (ip - jp).normalized, edge.normal)).normalized;
+        Vector3 n2 = Vector3.Cross(edge.normal, n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (jp - ip).normalized).normalized;
+
+        float s = (float)Math.Max(PointCloud[i].UniformityDegree, PointCloud[j].UniformityDegree) * (PointCloud[i].MinEdge + PointCloud[j].MinEdge) / 2;
+
 
         ConvexPolyhedron polyhedron = new ConvexPolyhedron();
         polyhedron.AddFace(n1, ip);
         polyhedron.AddFace(n2, ip);
         polyhedron.AddFace(n3, jp);
+        //polyhedron.AddFace(-n1, s * n1 + (ip + jp) / 2);
                 
-        innerPoints = VoxelSet.GetInnerPoints(polyhedron, false, (ip + jp) / 2);
+        innerPoints = VoxelSet.GetInnerPoints(polyhedron, false, influenceRegion2, (ip + jp) / 2);
         Vector3? pLeft = null, pRight = null;
         float minAngleLeft = 181f, minAngleRight = 181f;
-        //foreach (var point in innerPoints)
-        //{
-        //    if (point == i || point == j) continue;
-        //    Edge left = new Edge(point, i, Vector3.back);
-        //    Edge right = new Edge(point, j, Vector3.back);
+        foreach (var point in innerPoints)
+        {
+            if (point == i || point == j) continue;
+            Edge left = new Edge(point, i, Vector3.back);
+            Edge right = new Edge(point, j, Vector3.back);
 
-        //    if (edges.Contains(left))
-        //    {
-        //        float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
-        //        if (angleLeft < minAngleLeft)
-        //        {
-        //            minAngleLeft = angleLeft;
-        //            pLeft = PointCloud[point].Position;
-        //            ap1 = point;
-        //        }
-        //    }
-        //    if (edges.Contains(right))
-        //    {
-        //        float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
-        //        if (angleRight < minAngleRight)
-        //        {
-        //            minAngleRight = angleRight;
-        //            pRight = PointCloud[point].Position;
-        //            ap2 = point;
-        //        }
-        //    }
-        //}
+            if (edges.Contains(left))
+            {
+                float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
+                if (angleLeft < minAngleLeft)
+                {
+                    minAngleLeft = angleLeft;
+                    pLeft = PointCloud[point].Position;
+                    ap1 = point;
+                }
+            }
+            if (edges.Contains(right))
+            {
+                float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
+                if (angleRight < minAngleRight)
+                {
+                    minAngleRight = angleRight;
+                    pRight = PointCloud[point].Position;
+                    ap2 = point;
+                }
+            }
+        }
 
         ConvexPolyhedron p = new ConvexPolyhedron();
         p.AddFace(n1, ip);
@@ -330,13 +346,14 @@ public class IPDMeshCreator
         if (pLeft == null)
             p.AddFace(n2, ip);
         else
-            p.AddFace(-Vector3.Cross((Vector3)pLeft - ip, edge.normal).normalized, ip);
+            p.AddFace(Vector3.Cross((Vector3)pLeft - ip, edge.normal).normalized, ip);
 
         if (pRight == null)
             p.AddFace(n3, jp);
         else
-            p.AddFace(Vector3.Cross((Vector3)pRight - jp, edge.normal).normalized, jp);
+            p.AddFace(-Vector3.Cross((Vector3)pRight - jp, edge.normal).normalized, jp);
 
+        //polyhedron.AddFace(-n1, s * n1 + (ip + jp) / 2);
 
         return p;
     }
@@ -390,7 +407,7 @@ public class IPDMeshCreator
         List<int> points = new List<int>();
         for (int k = 0; k < innerPoints.Count; ++k)
         {
-            if (p.IsPointInside(PointCloud[innerPoints[k]].Position))
+            if (p.IsPointInside(PointCloud[innerPoints[k]].Position, influenceRegion2))
                 points.Add(innerPoints[k]);
         }
 
@@ -430,6 +447,7 @@ public class IPDMeshCreator
     /// <returns>The value</returns>
     private float CalculateEnergy(int i, int j, int k, int m)
     {
+        if (energyFunction2) return CalculateEnergy2(i, j, m);
         float L_ij = SqrDistance(i, j);
         float L_im = SqrDistance(i, m);
         float L_jm = SqrDistance(j, m);
@@ -444,6 +462,14 @@ public class IPDMeshCreator
         float k_jm = k_im;
 
         return k_ij * L_ij + k_im * L_im + k_jm * L_jm;
+    }
+
+    private float CalculateEnergy2(int i, int j, int m)
+    {
+        float L_ij = SqrDistance(i, j);
+        float L_im = SqrDistance(i, m);
+        float L_jm = SqrDistance(j, m);
+        return (L_ij + L_im + L_jm) * (L_im + L_jm - L_ij) / FindTriangleArea(i, j, m);
     }
 
     /// <summary>
