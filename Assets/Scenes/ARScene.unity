@@ -12951,7 +12951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b01413f1a99cdd45b79ea832defa7a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  voxelSize: 0.05
+  voxelSize: 0.03
   addWhenTouched: 1
   uniteNearbyPoints: 1
   useRadix: 1
@@ -12976,8 +12976,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawMesh: 1
   influenceRegion2: 1
-  energyFunction2: 1
-  regionAngle: 30
+  energyFunction2: 0
+  regionAngle: 17
   smartUpdate: 1
   meshMaterial: {fileID: 2100000, guid: 4c0a9553b8887d043b465910b01bf4f5, type: 2}
 --- !u!1 &1985308836

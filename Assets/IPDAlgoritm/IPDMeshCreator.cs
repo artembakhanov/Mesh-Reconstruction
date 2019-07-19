@@ -11,6 +11,10 @@ public class IPDMeshCreator
     public bool energyFunction2 = false;
     public bool smartUpdate = false;
     public bool closedInfluenceRegion2 = true;
+    public bool newNormalByDot = false;
+    public bool checkLengths = true;
+    public float maxEdgeLength = 0.1f;
+    public float sMult = 1f;
     private int buildPCounter = 0;
     private int findAPCounter = 0;
 
@@ -26,6 +30,7 @@ public class IPDMeshCreator
     List<Triangle> triangles = new List<Triangle>();
     List<int> newActivePoints = new List<int>();
     private float regionAngle;
+    
 
     public IPDMeshCreator(VoxelSet voxelSet)
     {
@@ -300,15 +305,19 @@ public class IPDMeshCreator
         Vector3 n3 = (Vector3.Cross(n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (ip - jp).normalized, edge.normal)).normalized;
         Vector3 n2 = Vector3.Cross(edge.normal, n1 + Mathf.Tan(Mathf.Deg2Rad * regionAngle) * (jp - ip).normalized).normalized;
 
-        float s = (float)Math.Max(PointCloud[i].UniformityDegree, PointCloud[j].UniformityDegree) * (PointCloud[i].MinEdge + PointCloud[j].MinEdge) / 2;
+        float s = sMult * (float)Math.Max(PointCloud[i].UniformityDegree, PointCloud[j].UniformityDegree) * (PointCloud[i].MinEdge + PointCloud[j].MinEdge) / 2;
 
 
         ConvexPolyhedron polyhedron = new ConvexPolyhedron();
         polyhedron.AddFace(n1, ip);
         polyhedron.AddFace(n2, ip);
         polyhedron.AddFace(n3, jp);
-        //polyhedron.AddFace(-n1, s * n1 + (ip + jp) / 2);
-                
+
+        polyhedron.AddFace(-n1, s * -n1 + (ip + jp) / 2);
+        polyhedron.AddFace(edge.normal, ip + s * edge.normal); // top face
+        polyhedron.AddFace(-edge.normal, ip - s * edge.normal); // bottom face - 
+
+
         innerPoints = VoxelSet.GetInnerPoints(polyhedron, false, influenceRegion2, (ip + jp) / 2);
         Vector3? pLeft = null, pRight = null;
         float minAngleLeft = 181f, minAngleRight = 181f;
@@ -353,7 +362,7 @@ public class IPDMeshCreator
         else
             p.AddFace(-Vector3.Cross((Vector3)pRight - jp, edge.normal).normalized, jp);
 
-        //polyhedron.AddFace(-n1, s * n1 + (ip + jp) / 2);
+        polyhedron.AddFace(-n1, s * -n1 + (ip + jp) / 2);
 
         return p;
     }
@@ -392,7 +401,10 @@ public class IPDMeshCreator
         foreach (var m in points)
         {
             float currentSum = CalculateEnergy(e_ij.vertex1, e_ij.vertex2, e_ij.vertex3, m);
-            if (PointCloud[m].status == PointStatus.ACTIVE && currentSum < sum && GeomIntegrity(e_ij, m, tr, allowedPoints.ToArray(), fixedEdges, fixedVertices)) // if do not intersect other triangles
+            if (PointCloud[m].status == PointStatus.ACTIVE 
+                && currentSum < sum 
+                && (!checkLengths || Distance(m, e_ij.vertex1) <= maxEdgeLength && Distance(m, e_ij.vertex2) <= maxEdgeLength)
+                && GeomIntegrity(e_ij, m, tr, allowedPoints.ToArray(), fixedEdges, fixedVertices)) // if do not intersect other triangles
             {
                 activePoint = m;
                 sum = currentSum;
@@ -506,20 +518,42 @@ public class IPDMeshCreator
         PointCloud[edge.vertex1].triangles.Add(triangle);
         PointCloud[edge.vertex2].triangles.Add(triangle);
 
-
         Vector3 normal = Vector3.Cross(PointCloud[edge.vertex1].Position - PointCloud[point].Position, PointCloud[edge.vertex2].Position - PointCloud[point].Position).normalized;
         meshTriangles.Add(point);
-        float dot = Vector3.Dot(normal, edge.normal);
-        if (dot <= 0)
+        if (!newNormalByDot)
         {
-            meshTriangles.Add(edge.vertex2);
-            meshTriangles.Add(edge.vertex1);
-            normal *= -1;
-        } else
-        {
-            meshTriangles.Add(edge.vertex1);
-            meshTriangles.Add(edge.vertex2);
+            int i = edge.vertex1;
+            int j = edge.vertex2;
+            int k = edge.vertex3;
+
+            // check if the i and j vertices are chosen correctly
+            if (Vector3.Dot(Vector3.Cross(PointCloud[k].Position - PointCloud[i].Position, PointCloud[k].Position - PointCloud[j].Position), edge.normal) < 0)
+            {
+                i = edge.vertex2;
+                j = edge.vertex1;
+            }
+
+            normal = Vector3.Cross(PointCloud[point].Position - PointCloud[j].Position, PointCloud[point].Position - PointCloud[i].Position).normalized;
+
+            meshTriangles.Add(j);
+            meshTriangles.Add(i);
         }
+        else
+        {
+            float dot = Vector3.Dot(normal, edge.normal);
+            if (dot <= 0)
+            {
+                meshTriangles.Add(edge.vertex2);
+                meshTriangles.Add(edge.vertex1);
+                normal *= -1;
+            }
+            else
+            {
+                meshTriangles.Add(edge.vertex1);
+                meshTriangles.Add(edge.vertex2);
+            }
+        }
+        
 
         Edge edge1 = new Edge(edge.vertex1, point, edge.vertex2, normal, Distance(edge.vertex1, point));
         Edge edge2 = new Edge(edge.vertex2, point, edge.vertex1, normal, Distance(edge.vertex2, point));

@@ -58,7 +58,7 @@ public class MeshVisualizer : MonoBehaviour
 
     public void ReadFle()
     {
-        string filePath = "C:\\Users\\artem\\Unity Projects\\ARTest 3\\startpoints10.txt";
+        string filePath = "C:\\Users\\artem\\Unity Projects\\ARTest 3\\startpoints9.txt";
         if (!File.Exists(filePath)) return;
 
         string[] lines = File.ReadAllLines(filePath);
