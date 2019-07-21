@@ -12,8 +12,9 @@ public class IPDMeshCreator
     public bool smartUpdate = false;
     public bool closedInfluenceRegion2 = true;
     public bool newNormalByDot = false;
-    public bool checkLengths = true;
-    public float maxEdgeLength = 0.1f;
+    public bool checkLengths = false;
+    public float maxEdgeLength = 0.15f;
+    public bool checkFacesAngle = true;
     public float sMult = 1f;
     private int buildPCounter = 0;
     private int findAPCounter = 0;
@@ -65,9 +66,10 @@ public class IPDMeshCreator
     /// <returns>Array of triangles that is used by standard unity mesh renderer.</returns>
     public int[] ComputeMeshTriangles() 
     {
-        if (!smartUpdate)
+        if (!smartUpdate)   
         {
-            meshTriangles.Clear();
+            PointCloud = new List<Point>();
+            meshTriangles = new List<int>();
             aeq = new Queue<Edge>(); // active-edge queue
             edges = new HashSet<Edge>();
             fixedEdges = new HashSet<Edge>();
@@ -216,8 +218,8 @@ public class IPDMeshCreator
         Vector3 n1 = Vector3.Cross(edge.normal, jp - ip).normalized;
         polyhedron.AddFace(n1, ip); // test
 
-        polyhedron.AddFace(N, p_m + s * N); // top face
-        polyhedron.AddFace(-N, p_m - s * N); // bottom face - 
+        polyhedron.AddFace(N, p_m + 2 * s * N); // top face
+        polyhedron.AddFace(-N, p_m - 2 * s * N); // bottom face - 
         polyhedron.AddFace(-Vector3.Cross(N, ip - p).normalized, ip); // face containing pi - 
         polyhedron.AddFace(Vector3.Cross(N, jp - p).normalized, jp); // face containing pj  
         Vector3 N5 = Vector3.Cross(jp - ip, N).normalized;
@@ -227,7 +229,8 @@ public class IPDMeshCreator
         // that are connected to i or j
         var points = VoxelSet.GetInnerPoints(polyhedron, smartUpdate, influenceRegion2, p_m);
         Vector3? pLeft = null, pRight = null;
-        float minAngleLeft = 181f, minAngleRight = 181f;
+        //float minAngleLeft = 181f, minAngleRight = 181f;
+        float minAngleLeft = 90 + regionAngle, minAngleRight = 90 + regionAngle;
         foreach (var point in points)
         {
             if (point == i || point == j) continue;
@@ -435,6 +438,25 @@ public class IPDMeshCreator
     /// <returns>true if geometry integrity holds, false otherwise</returns>
     private bool GeomIntegrity(Edge e_ij, int m, HashSet<Triangle> triangles, Vector3[] allowedPoints, HashSet<Edge> fixedEdges, HashSet<int> fixedVertices)
     {
+
+        if (checkFacesAngle)
+        {
+            int i = e_ij.vertex1;
+            int j = e_ij.vertex2;
+            int k = e_ij.vertex3;
+
+            // check if the i and j vertices are chosen correctly
+            if (Vector3.Dot(Vector3.Cross(PointCloud[k].Position - PointCloud[i].Position, PointCloud[k].Position - PointCloud[j].Position), e_ij.normal) < 0)
+            {
+                i = e_ij.vertex2;
+                j = e_ij.vertex1;
+            }
+
+            var normal = Vector3.Cross(PointCloud[m].Position - PointCloud[j].Position, PointCloud[m].Position - PointCloud[i].Position).normalized;
+
+            var angle = Vector3.Angle(normal, e_ij.normal);
+            if (angle < 0 || angle > 100) return false;
+        }
         
         Triangle candidate = new Triangle(PointCloud[e_ij.vertex1].Position, PointCloud[e_ij.vertex2].Position, PointCloud[m].Position, new int[] { e_ij.vertex1, e_ij.vertex2, m });
 

@@ -10,7 +10,7 @@ public class MeshVisualizer : MonoBehaviour
     public bool drawMesh = true;
     public bool influenceRegion2 = true;
     public bool energyFunction2 = true;
-    public float regionAngle = 45f;
+    public float regionAngle = 17f;
     public bool smartUpdate = true;
     public Material meshMaterial;
     private PointStorage pointStorage;
@@ -20,13 +20,16 @@ public class MeshVisualizer : MonoBehaviour
     void Start()
     {
         pointStorage = GetComponent<PointStorage>();
-        pointStorage.voxelSet.NewActivePointsEvent += VoxelSet_NewActivePointsEvent;
+
+        if (drawMesh)
+            pointStorage.voxelSet.NewActivePointsEvent += VoxelSet_NewActivePointsEvent;
 
         smartUpdate = pointStorage.smartUpdate;
 
         IPDMeshCreator = new IPDMeshCreator(pointStorage.voxelSet, smartUpdate, influenceRegion2, energyFunction2, regionAngle);
 
         ReadFle();
+        //AddRandomPoints(500000);
     }
 
     private void VoxelSet_NewActivePointsEvent(NewPointsArgs e)
@@ -68,11 +71,22 @@ public class MeshVisualizer : MonoBehaviour
             float x = float.Parse(line.Split(' ')[0]);
             float y = float.Parse(line.Split(' ')[1]);
             float z = float.Parse(line.Split(' ')[2]);
-            pointStorage.voxelSet.AddPoint(1, new Vector3(x, y, z), 1, Vector3.forward, false);
+            pointStorage.voxelSet.AddPoint(1, new Vector3(x, y, z), Random.Range(0.1f, 1), Vector3.forward, false);
+            pointStorage.voxelSet.Update();
         }
-        pointStorage.voxelSet.Update();
+       
+
         //VoxelSet_NewActivePointsEvent(null);
     }
+
+    public void AddRandomPoints(int pointsNumber)
+    {
+        for (int i = 0; i < pointsNumber; i++)
+        {
+            pointStorage.voxelSet.AddPoint(1, new Vector3(Random.Range(-2, 2), Random.Range(-2, 2), Random.Range(-2, 2)), Random.Range(0.1f, 1), Vector3.forward, true);
+        }
+        pointStorage.voxelSet.Update();
+    } 
 
     // Update is called once per frame
     void Update()

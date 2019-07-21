@@ -8181,6 +8181,7 @@ GameObject:
   - component: {fileID: 1929346169}
   - component: {fileID: 1929346168}
   - component: {fileID: 1929346171}
+  - component: {fileID: 1929346172}
   m_Layer: 0
   m_Name: MeshReconstructor
   m_TagString: Untagged
@@ -8216,7 +8217,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowParticles: 1
   ParticleSize: 0.005
-  ParticleColor: {r: 0, g: 810.1533, b: 714.8412, a: 1}
+  ParticleColor: {r: 0, g: 1081.6183, b: 954.3691, a: 1}
 --- !u!198 &1929346168
 ParticleSystem:
   m_ObjectHideFlags: 0
@@ -8785,7 +8786,7 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     randomizeRotationDirection: 0
-    maxNumParticles: 1000
+    maxNumParticles: 10000000
     size3D: 0
     rotation3D: 1
     gravityModifier:
@@ -9045,7 +9046,7 @@ ParticleSystem:
           m_PostInfinity: 2
           m_RotationOrder: 4
   EmissionModule:
-    enabled: 1
+    enabled: 0
     serializedVersion: 4
     rateOverTime:
       serializedVersion: 2
@@ -12951,17 +12952,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b01413f1a99cdd45b79ea832defa7a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  voxelSize: 0.03
-  addWhenTouched: 1
+  voxelSize: 0.07
+  addWhenTouched: 0
   uniteNearbyPoints: 1
   useRadix: 1
   filterPointsFarFromCenter: 1
   maxDistanceFromCenter: 300
   filterPointsWithSmallConfValue: 1
-  minConfidenceValue: 0.2
+  minConfidenceValue: 0.1
   filterPointsFarFromCamera: 1
   maxDistanceFromCamera: 1
-  smartUpdate: 1
+  smartUpdate: 0
+  smartUpdateIterations: 5
 --- !u!114 &1929346171
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12976,10 +12978,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawMesh: 1
   influenceRegion2: 1
-  energyFunction2: 0
+  energyFunction2: 1
   regionAngle: 17
-  smartUpdate: 1
+  smartUpdate: 0
   meshMaterial: {fileID: 2100000, guid: 4c0a9553b8887d043b465910b01bf4f5, type: 2}
+--- !u!114 &1929346172
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1929346165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a42cea036ffd6bf41bbf5ac62c13ae4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cube: {fileID: 7673462184223594739, guid: 860a9ae34b297894aa0552f1b6e26b4d, type: 3}
+  voxelMaterials:
+  - {fileID: 2100000, guid: 7093c6dc212bd8746b43a4f0032c1efe, type: 2}
+  - {fileID: 2100000, guid: ca9e288ce972f3b4c96899ed4bb42a4b, type: 2}
+  drawVoxels: 0
 --- !u!1 &1985308836
 GameObject:
   m_ObjectHideFlags: 0

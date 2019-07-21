@@ -133,7 +133,8 @@ namespace Bakhanov.IPD
             if (this.face.normal == o.face.normal || (antiparallel = this.face.normal == -o.face.normal))
             {
                 // planes are parallel
-                if (this.face.D == (antiparallel ? -1 : 1) * o.face.D)
+                float D = (antiparallel ? -1 : 1) * o.face.D;
+                if (D - 1e-6f <= this.face.D && this.face.D <= D + 1e-6f)
                     geomIntegrity = Check2d(o, allowedPoints);
                 else
                     geomIntegrity = true;
@@ -274,15 +275,19 @@ namespace Bakhanov.IPD
             Vector3 bc_bp = Vector3.Cross(bc, bp);
             Vector3 ca_cp = Vector3.Cross(ca, cp);
 
+            bool ab_ap_zero = ab_ap.sqrMagnitude > -1e-6f && ab_ap.sqrMagnitude < 1e-6f;
+            bool bc_bp_zero = bc_bp.sqrMagnitude > -1e-6f && bc_bp.sqrMagnitude < 1e-6f;
+            bool ca_cp_zero = ca_cp.sqrMagnitude > -1e-6f && ca_cp.sqrMagnitude < 1e-6f;
+
             bool onSegment = true;
-            if (ab_ap.sqrMagnitude == 0 && !OnSegment(a, b, p))
+            if (ab_ap_zero && !OnSegment(a, b, p))
                 onSegment = false;
-            if (bc_bp.sqrMagnitude == 0 && !OnSegment(b, c, p))
+            if (bc_bp_zero && !OnSegment(b, c, p))
                 onSegment = false;
-            if (ca_cp.sqrMagnitude == 0 && !OnSegment(c, a, p))
+            if (ca_cp_zero && !OnSegment(c, a, p))
                 onSegment = false;
 
-            if (ab_ap.sqrMagnitude == 0 || bc_bp.sqrMagnitude == 0 || ca_cp.sqrMagnitude == 0) {
+            if (ab_ap_zero || bc_bp_zero || ca_cp_zero) {
                 if (onSegment)
                     return new Vector2(0, 1);
                 else

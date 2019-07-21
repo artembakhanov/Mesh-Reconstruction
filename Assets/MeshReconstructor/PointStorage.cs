@@ -8,8 +8,8 @@ using UnityEngine.XR.ARFoundation;
 public class PointStorage : MonoBehaviour
 {
     public VoxelSet voxelSet = new VoxelSet();
-    public float voxelSize = 0.05f;
-    public bool addWhenTouched = true;
+    public float voxelSize = 0.07f;
+    public bool addWhenTouched = false;
     public bool uniteNearbyPoints = true;
     public bool useRadix = true;
     public bool filterPointsFarFromCenter = true;
@@ -19,6 +19,7 @@ public class PointStorage : MonoBehaviour
     public bool filterPointsFarFromCamera = true;
     public float maxDistanceFromCamera = 1f;
     public bool smartUpdate = true;
+    public int smartUpdateIterations = 4;
 
     private ARPointCloudManager aRPointCloudManager;
     private Vector2 screenCenter = new Vector2(Screen.width / 2, Screen.height / 2);
@@ -30,13 +31,19 @@ public class PointStorage : MonoBehaviour
         if (aRPointCloudManager == null)
             throw new UnityException("No ARPointCloudManager in the scene");
 
-        aRPointCloudManager.pointCloudsChanged += ARPointCloudManager_pointCloudsChanged;
-
+        //voxelSet = new VoxelSet();
         voxelSet.ChangeSize(voxelSize);
         voxelSet.CheckRadix = useRadix;
         voxelSet.SmartUpdate = smartUpdate;
+        voxelSet.SmartUpdateIterations = smartUpdateIterations;
+
+        aRPointCloudManager.pointCloudsChanged += ARPointCloudManager_pointCloudsChanged;
     }
 
+    /// <summary>
+    /// Function that is called when point cloud is updated.
+    /// </summary>
+    /// <param name="obj">Object with parameters.</param>
     private void ARPointCloudManager_pointCloudsChanged(ARPointCloudChangedEventArgs obj)
     {
         if (addWhenTouched && !(Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Stationary))
@@ -56,6 +63,12 @@ public class PointStorage : MonoBehaviour
         voxelSet.Update();
     }
 
+    /// <summary>
+    /// Check whether the found point fits the constraints.
+    /// </summary>
+    /// <param name="position">Position of the point.</param>
+    /// <param name="confidenceValue">Confidence level of the point.</param>
+    /// <returns>true if point fits the constraints, false otherwise.</returns>
     private bool CheckPoint(Vector3 position, float confidenceValue)
     {
         if (Vector3.Distance(position, Camera.current.transform.position) > maxDistanceFromCamera)

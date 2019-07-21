@@ -11,11 +11,18 @@ public class VoxelSet
     public event NewActivePointsHandler NewActivePointsEvent;
     public event UpdateHandler UpdateEvent;
 
-    private Dictionary<Vector3Int, List<int>> Voxels;
+    public Dictionary<Vector3Int, List<int>> Voxels;
     private Dictionary<Vector3Int, int> VoxelVersions;
     private Dictionary<ulong, int> IdIndexPairs;
     public List<Point> Points;
-    public int version = 0;
+    public int version
+    {
+        get
+        {
+            return Version / SmartUpdateIterations;
+        }
+    }
+    private int Version = 0;
     private static float VoxelSize = 0.05f;
     private static ulong Counter = ulong.MaxValue;
     private List<Point> newActivePoints = new List<Point>(); // right-handed positions
@@ -32,6 +39,7 @@ public class VoxelSet
 
     public bool CheckRadix = true;
     public bool SmartUpdate = false;
+    public int SmartUpdateIterations = 1;
 
     public VoxelSet()
     {
@@ -147,7 +155,15 @@ public class VoxelSet
         if (!IdIndexPairs.TryGetValue(id, out int index))
             return false;
 
-        GetVoxelForEditing(Points[index].Position).Remove(index);
+        var key = GetKey(Points[index].Position);
+        var vox = GetVoxelForEditing(key);
+        //if (vox.Count == 1)
+        //{
+        //    Voxels.Remove(GetKey(Points[index].Position));
+        //    VoxelVersions.Remove(GetKey(Points[index].Position));
+        //}
+        //else
+        vox.Remove(index);
 
         int lastIndex = Points.Count - 1;
         if (lastIndex > 0 && lastIndex != index)
@@ -161,13 +177,19 @@ public class VoxelSet
 
         IdIndexPairs.Remove(id);
         Points.RemoveAt(lastIndex);
-
+        if (vox.Count == 0)
+        {
+            Voxels.Remove(key);
+            //Voxels.Remove(GetKey(Points[index].Position));
+            VoxelVersions.Remove(key);
+        }
         return true;
     }
     #endregion
 
-    public void Update()
+    public void Update(int smartUpdateIterations = 1)
     {
+        int prevVersion = version;
         List<int> newActivePoints = new List<int>();
         for (var i = 0; i < Points.Count; ++i)
         {
@@ -176,10 +198,25 @@ public class VoxelSet
                 newActivePoints.Add(i);
             }
         }
-        version++;
-        lastActivePoints = newActivePoints;
-        NewActivePointsEvent?.Invoke(new NewPointsArgs(newActivePoints));
-        UpdateEvent?.Invoke();
+        Version++;
+
+        if (!SmartUpdate || prevVersion != version)
+        {
+            lastActivePoints = newActivePoints;
+            NewActivePointsEvent?.Invoke(new NewPointsArgs(newActivePoints));
+            UpdateEvent?.Invoke();
+        }
+
+        int counter = 0;
+        int overall = 0;
+        foreach (var voxel in Voxels)
+        {
+            counter++;  
+            overall += voxel.Value.Count;
+        }
+
+        Debug.Log($"voxel set update {Points.Count}");
+        //Debug.Log($"{(float) overall / counter}");
     }
 
     /// <summary>
