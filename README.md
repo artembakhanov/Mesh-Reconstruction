@@ -7,15 +7,17 @@ The algorithm is slow and requires some optimizations. Since the cloud of points
 ## Get started
 It is highly recommended to use Unity 2019.03 (or higher).
 The following packages are required:
+
 - **AR Foundation** (Version 2.0.2)
 - **ARCore XR Plugin** (Version 2.0.2)
 
 Minimum API level must be **Android 7.0 (Nougat)**.
 Multithreaded rendering must be disabled.
 
-The code is inside **IPDMeshCreator** class. 
-To use it you need to create an instance of **VoxelSet** and add points with `voxelSet.AddPoint(...)`.
-To get triangles of reconstructed mesh call `IPDMeshCreator.ComputeMeshTriangles()`.
+To reconstruct mesh use prefab **MeshReconstructor** in prefabs folder.
+
+All the scripts are inside folder MeshReconstructor.
+
 ## Credits
 The [code](http://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/code/tritri_isectline.txt) of Tomas Akenine-Möller was used. This code is used for triangles intersection testing.
 

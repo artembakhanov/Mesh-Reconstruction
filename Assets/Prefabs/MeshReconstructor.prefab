@@ -59,7 +59,7 @@ MonoBehaviour:
   filterPointsFarFromCamera: 1
   maxDistanceFromCamera: 1
   smartUpdate: 1
-  smartUpdateIterations: 5
+  smartUpdateIterations: 3
 --- !u!114 &6136600676840395917
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4814,6 +4814,8 @@ MonoBehaviour:
   energyFunction2: 1
   regionAngle: 17
   smartUpdate: 1
+  forceUpdate: 1
+  forceUpdateIterations: 5
   meshMaterial: {fileID: 2100000, guid: 4c0a9553b8887d043b465910b01bf4f5, type: 2}
 --- !u!114 &6136600676840395910
 MonoBehaviour:

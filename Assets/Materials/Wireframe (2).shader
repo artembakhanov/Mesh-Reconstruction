@@ -11,7 +11,7 @@ Shader "Custom/Wireframe42"
 	SubShader
 	{
 		Tags { "Queue"="Transparent" "RenderType"="Transparent" }
-		Cull Off // sos here
+		//Cull Off // sos here
 		ZWrite Off
         Blend One OneMinusSrcAlpha
 

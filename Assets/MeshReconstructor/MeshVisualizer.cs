@@ -12,6 +12,8 @@ public class MeshVisualizer : MonoBehaviour
     public bool energyFunction2 = true;
     public float regionAngle = 17f;
     public bool smartUpdate = true;
+    public bool forceUpdate = true;
+    public int forceUpdateIterations = 5;
     public Material meshMaterial;
     private PointStorage pointStorage;
     private IPDMeshCreator IPDMeshCreator;
@@ -34,7 +36,7 @@ public class MeshVisualizer : MonoBehaviour
 
     private void VoxelSet_NewActivePointsEvent(NewPointsArgs e)
     {
-        DrawMesh(pointStorage.voxelSet.Vertices(), IPDMeshCreator.ComputeMeshTriangles());
+        DrawMesh(pointStorage.voxelSet.Vertices(), IPDMeshCreator.ComputeMeshTriangles(forceUpdate && pointStorage.voxelSet.version % forceUpdateIterations == 0));
     }
 
     private void DrawMesh(Vector3[] vertices, int[] triangles)

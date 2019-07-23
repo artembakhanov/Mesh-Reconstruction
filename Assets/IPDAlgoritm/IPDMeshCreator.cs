@@ -12,8 +12,8 @@ public class IPDMeshCreator
     public bool smartUpdate = false;
     public bool closedInfluenceRegion2 = true;
     public bool newNormalByDot = false;
-    public bool checkLengths = false;
-    public float maxEdgeLength = 0.15f;
+    public bool checkLengths = true;
+    public float maxEdgeLength = 0.1714f;
     public bool checkFacesAngle = true;
     public float sMult = 1f;
     private int buildPCounter = 0;
@@ -24,7 +24,7 @@ public class IPDMeshCreator
     private List<int> meshTriangles = new List<int>();
 
     Queue<Edge> aeq = new Queue<Edge>(); // active-edge queue
-    HashSet<Edge> edges = new HashSet<Edge>();
+    Dictionary<Edge, Edge> edges = new Dictionary<Edge, Edge>();
     HashSet<Edge> fixedEdges = new HashSet<Edge>();
     HashSet<Edge> boundaryEdges = new HashSet<Edge>();
     HashSet<int> fixedVertices = new HashSet<int>();
@@ -64,14 +64,31 @@ public class IPDMeshCreator
     /// Generate all triangles for the point cloud.
     /// </summary>
     /// <returns>Array of triangles that is used by standard unity mesh renderer.</returns>
-    public int[] ComputeMeshTriangles() 
+    public int[] ComputeMeshTriangles(bool forceUpdate = false) 
     {
-        if (!smartUpdate)   
+        if (forceUpdate)
+        {
+            PointCloud = new List<Point>();
+            var temp = meshTriangles;
+            meshTriangles = new List<int>();
+            aeq = new Queue<Edge>(); // active-edge queue
+            edges = new Dictionary<Edge, Edge>();
+            fixedEdges = new HashSet<Edge>();
+            boundaryEdges = new HashSet<Edge>();
+            fixedVertices = new HashSet<int>();
+            triangles = new List<Triangle>();
+            foreach (var point in VoxelSet.Points)
+            {
+                PointCloud.Add(new Point(point.RightHandedPosition));
+            }
+            AddSeedTriangle(temp.ToArray());
+        }
+        else if (!smartUpdate)   
         {
             PointCloud = new List<Point>();
             meshTriangles = new List<int>();
             aeq = new Queue<Edge>(); // active-edge queue
-            edges = new HashSet<Edge>();
+            edges = new Dictionary<Edge, Edge>();
             fixedEdges = new HashSet<Edge>();
             boundaryEdges = new HashSet<Edge>();
             fixedVertices = new HashSet<int>();
@@ -115,7 +132,7 @@ public class IPDMeshCreator
 
         Debug.Log("Here start searching a seed triangle");
         if (meshTriangles.Count == 0)
-            AddSeedTriangle(aeq, edges, triangles); // add first triangle to the mesh
+            GenerateSeedTriangle(aeq, edges, triangles); // add first triangle to the mesh
 
         Debug.Log("Here start searching other points");
         while (aeq.Count != 0)
@@ -136,7 +153,7 @@ public class IPDMeshCreator
         return meshTriangles.ToArray();
     }
 
-    private void SaveInfo(Queue<Edge> aeq, HashSet<Edge> edges, HashSet<Edge> fixedEdges)
+    private void SaveInfo(Queue<Edge> aeq, Dictionary<Edge, Edge> edges, HashSet<Edge> fixedEdges)
     {
         var points = VoxelSet.Points;
         string filePath = Application.persistentDataPath + "/mesh.txt";
@@ -162,7 +179,7 @@ public class IPDMeshCreator
         lines.Add("-----------Edges-----------");
         foreach (var edge in edges)
         {
-            lines.Add($"v1 {edge.vertex1} v2 {edge.vertex2} v3 {edge.vertex3} l {edge.length} n {edge.normal} s {edge.status}");
+            //lines.Add($"v1 {edge.vertex1} v2 {edge.vertex2} v3 {edge.vertex3} l {edge.length} n {edge.normal} s {edge.status}");
         }
 
         lines.Add("-----------Fixed Edges-----------");
@@ -181,7 +198,7 @@ public class IPDMeshCreator
     /// <param name="edge">The edge, which influence region to be foind.</param>
     /// <param name="edges">The set of existing edges.</param>
     /// <returns>Polyhedron object that is the influence region.</returns>
-    private ConvexPolyhedron BuildPolyhedron(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2, out List<int> innerPoints)
+    private ConvexPolyhedron BuildPolyhedron(Edge edge, Dictionary<Edge, Edge> edges, out int ap1, out int ap2, out List<int> innerPoints)
     {
         if (influenceRegion2) return BuildPolyhedron2(edge, edges, out ap1, out ap2, out innerPoints);
         buildPCounter++; 
@@ -237,7 +254,7 @@ public class IPDMeshCreator
             Edge left = new Edge(point, i, Vector3.back);
             Edge right = new Edge(point, j, Vector3.back);
 
-            if (edges.Contains(left))
+            if (edges.ContainsKey(left))
             {
                 float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
                 if (angleLeft < minAngleLeft)
@@ -247,7 +264,7 @@ public class IPDMeshCreator
                     ap1 = point;
                 }
             }
-            if (edges.Contains(right))
+            if (edges.ContainsKey(right))
             {
                 float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
                 if (angleRight < minAngleRight)
@@ -283,7 +300,7 @@ public class IPDMeshCreator
     /// <param name="ap2">Allowed point 2</param>s
     /// <param name="innerPoints">Points that approximately lie inside the influence region (polyhedron).</param>
     /// <returns>The polyhedron.</returns>
-    private ConvexPolyhedron BuildPolyhedron2(Edge edge, HashSet<Edge> edges, out int ap1, out int ap2, out List<int> innerPoints)
+    private ConvexPolyhedron BuildPolyhedron2(Edge edge, Dictionary<Edge, Edge> edges, out int ap1, out int ap2, out List<int> innerPoints)
     {
         buildPCounter++;
         ap1 = -1;
@@ -330,7 +347,7 @@ public class IPDMeshCreator
             Edge left = new Edge(point, i, Vector3.back);
             Edge right = new Edge(point, j, Vector3.back);
 
-            if (edges.Contains(left))
+            if (edges.ContainsKey(left))
             {
                 float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
                 if (angleLeft < minAngleLeft)
@@ -340,7 +357,7 @@ public class IPDMeshCreator
                     ap1 = point;
                 }
             }
-            if (edges.Contains(right))
+            if (edges.ContainsKey(right))
             {
                 float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
                 if (angleRight < minAngleRight)
@@ -377,7 +394,7 @@ public class IPDMeshCreator
     /// <param name="edges">Set of existing edges</param>
     /// <param name="triangles">List of existing triangles</param>
     /// <returns>null if there is no active point, the index of the point</returns>
-    private int? FindActivePoint(Edge e_ij, HashSet<Edge> edges, List<Triangle> triangles, HashSet<Edge> fixedEdges, HashSet<int> fixedVertices)
+    private int? FindActivePoint(Edge e_ij, Dictionary<Edge, Edge> edges, List<Triangle> triangles, HashSet<Edge> fixedEdges, HashSet<int> fixedVertices)
     {
         findAPCounter++;
         int ap1, ap2;
@@ -453,6 +470,18 @@ public class IPDMeshCreator
             }
 
             var normal = Vector3.Cross(PointCloud[m].Position - PointCloud[j].Position, PointCloud[m].Position - PointCloud[i].Position).normalized;
+
+            if (edges.TryGetValue(new Edge(i, m), out Edge edge1))
+            {
+                var angle1 = Vector3.Angle(normal, edge1.normal);
+                if (angle1 < 0 || angle1 > 100) return false;
+            }
+
+            if (edges.TryGetValue(new Edge(j, m), out Edge edge2))
+            {
+                var angle2 = Vector3.Angle(normal, edge2.normal);
+                if (angle2 < 0 || angle2 > 100) return false;
+            }
 
             var angle = Vector3.Angle(normal, e_ij.normal);
             if (angle < 0 || angle > 100) return false;
@@ -533,7 +562,7 @@ public class IPDMeshCreator
         return Vector3.Distance(PointCloud[a].Position, PointCloud[b].Position);
     }
     
-    private void AddTriangle(Edge edge, int point, Queue<Edge> aeq, HashSet<Edge> edges, HashSet<Edge> fixedEdges, List<Triangle> triangles, HashSet<int> fixedVertices)
+    private void AddTriangle(Edge edge, int point, Queue<Edge> aeq, Dictionary<Edge, Edge> edges, HashSet<Edge> fixedEdges, List<Triangle> triangles, HashSet<int> fixedVertices)
     {
         Triangle triangle = new Triangle(PointCloud[point].Position, PointCloud[edge.vertex1].Position, PointCloud[edge.vertex2].Position, new int[] { point, edge.vertex1, edge.vertex2 });
         PointCloud[point].triangles.Add(triangle);
@@ -582,12 +611,12 @@ public class IPDMeshCreator
 
         fixedEdges.Add(edge);
 
-        if (!edges.Contains(edge1))
+        if (!edges.ContainsKey(edge1))
         {
             PointCloud[edge.vertex1].AddEdge(edge1);
             PointCloud[point].AddEdge(edge1);
             aeq.Enqueue(edge1);
-            edges.Add(edge1);
+            edges.Add(edge1, edge1);
         } else
         {
             PointCloud[edge.vertex1].RemoveActiveEdge();
@@ -595,12 +624,12 @@ public class IPDMeshCreator
             fixedEdges.Add(edge1);
         }
 
-        if (!edges.Contains(edge2))
+        if (!edges.ContainsKey(edge2))
         {
             PointCloud[edge.vertex2].AddEdge(edge2);
             PointCloud[point].AddEdge(edge2);
             aeq.Enqueue(edge2);
-            edges.Add(edge2);
+            edges.Add(edge2, edge2);
         }
         else
         {
@@ -622,9 +651,14 @@ public class IPDMeshCreator
     /// </summary>
     /// <param name="aeq">Active-edge queue</param>
     /// <param name="edges">Hashset with all edges</param>
-    private void AddSeedTriangle(Queue<Edge> aeq, HashSet<Edge> edges, List<Triangle> triangles)
+    private void GenerateSeedTriangle(Queue<Edge> aeq, Dictionary<Edge, Edge> edges, List<Triangle> triangles)
     {
         int[] seedTriangle = GetSeedTriangle();
+        AddSeedTriangle(seedTriangle);
+    }
+
+    private void AddSeedTriangle(int[] seedTriangle)
+    {
         int corner1 = seedTriangle[0], corner2 = seedTriangle[1], corner3 = seedTriangle[2];
         Vector3 normal = Vector3.Cross(PointCloud[corner2].Position - PointCloud[corner1].Position, PointCloud[corner3].Position - PointCloud[corner1].Position).normalized;
         //Vector3 direction = points[corner1].CameraDirection + points[corner2].CameraDirection + points[corner3].CameraDirection;
@@ -653,7 +687,7 @@ public class IPDMeshCreator
 
         PointCloud[corner2].AddEdge(edge1);
         PointCloud[corner2].AddEdge(edge3);
-    
+
         PointCloud[corner3].AddEdge(edge1);
         PointCloud[corner3].AddEdge(edge2);
 
@@ -666,13 +700,12 @@ public class IPDMeshCreator
         aeq.Enqueue(edge2);
         aeq.Enqueue(edge3);
 
-        edges.Add(edge1);
-        edges.Add(edge2);
-        edges.Add(edge3);
+        edges.Add(edge1, edge1);
+        edges.Add(edge2, edge2);
+        edges.Add(edge3, edge3);
 
         triangles.Add(triangle);
     }
-
     private int[] GetSeedTriangle()
     {
         int[] vertices = GetFirstTwoPoints();

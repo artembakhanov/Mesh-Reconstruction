@@ -292,12 +292,12 @@ public class VoxelSet
             // If collision test succedes then we must update our 'average' point.
             if (d != 0 && d <= point.ColliderRadius + current.ColliderRadius)
             {
+                RemovePoint(point.Id);
                 if (!SmartUpdate ||
                     CheckVoxelVersion(GetKey(point.Position))
                     && CheckVoxelVersion(GetKey(current.Position))
                     && CheckVoxelVersion(GetKey(GetNewPosition(point, current))))
                     {
-                        RemovePoint(point.Id);
                         RemovePoint(current.Id);
                         AddPoint(Counter, GetNewPosition(point, current), (point.ConfidenceValue + current.ConfidenceValue) / 2f, point.CameraDirection, true);
                         Counter--;
