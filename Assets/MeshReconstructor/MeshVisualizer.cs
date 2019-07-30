@@ -14,6 +14,8 @@ public class MeshVisualizer : MonoBehaviour
     public bool smartUpdate = true;
     public bool forceUpdate = true;
     public int forceUpdateIterations = 5;
+    public GameObject test;
+    public Material test1;
     public Material meshMaterial;
     private PointStorage pointStorage;
     private IPDMeshCreator IPDMeshCreator;
@@ -63,7 +65,7 @@ public class MeshVisualizer : MonoBehaviour
 
     public void ReadFle()
     {
-        string filePath = "C:\\Users\\artem\\Unity Projects\\ARTest 3\\startpoints9.txt";
+        string filePath = "C:/Users/artem/Unity Projects/ARTest 3/startpoints11.txt";
         if (!File.Exists(filePath)) return;
 
         string[] lines = File.ReadAllLines(filePath);
@@ -74,9 +76,15 @@ public class MeshVisualizer : MonoBehaviour
             float y = float.Parse(line.Split(' ')[1]);
             float z = float.Parse(line.Split(' ')[2]);
             pointStorage.voxelSet.AddPoint(1, new Vector3(x, y, z), Random.Range(0.1f, 1), Vector3.forward, false);
-            pointStorage.voxelSet.Update();
+
+            var obj = Instantiate(test);
+            obj.tag = "Voxel";
+            obj.transform.position = new Vector3(x, y, z);
+            obj.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+            obj.GetComponent<MeshRenderer>().material = test1;
         }
-       
+        pointStorage.voxelSet.Update();
+
 
         //VoxelSet_NewActivePointsEvent(null);
     }

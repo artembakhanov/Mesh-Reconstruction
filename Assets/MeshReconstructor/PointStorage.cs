@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 
@@ -83,5 +84,20 @@ public class PointStorage : MonoBehaviour
         }
 
         return true;
+    }
+
+    public void SavePoints()
+    {
+        string filePath = Application.persistentDataPath + "/points.txt";
+        if (!File.Exists(filePath))
+            File.Create(filePath);
+        var points = voxelSet.Points;
+        string[] lines = new string[points.Count];
+        for (int i = 0; i < points.Count; ++i)
+        {
+            lines[i] = $"{points[i].Position.x} {points[i].Position.y} {points[i].Position.z}";
+        }
+
+        File.WriteAllLines(filePath, lines);
     }
 }

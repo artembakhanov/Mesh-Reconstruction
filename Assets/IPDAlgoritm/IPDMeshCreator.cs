@@ -349,7 +349,7 @@ public class IPDMeshCreator
 
             if (edges.ContainsKey(left))
             {
-                float angleLeft = Vector3.Angle(jp - ip, PointCloud[point].Position - ip);
+                float angleLeft = Vector3.Angle(ip - jp, PointCloud[point].Position - ip);
                 if (angleLeft < minAngleLeft)
                 {
                     minAngleLeft = angleLeft;
@@ -359,7 +359,7 @@ public class IPDMeshCreator
             }
             if (edges.ContainsKey(right))
             {
-                float angleRight = Vector3.Angle(ip - jp, PointCloud[point].Position - jp);
+                float angleRight = Vector3.Angle(jp - ip, PointCloud[point].Position - jp);
                 if (angleRight < minAngleRight)
                 {
                     minAngleRight = angleRight;
@@ -471,20 +471,34 @@ public class IPDMeshCreator
 
             var normal = Vector3.Cross(PointCloud[m].Position - PointCloud[j].Position, PointCloud[m].Position - PointCloud[i].Position).normalized;
 
+            int angles = 1;
+            float anglesSum = 0;
+
             if (edges.TryGetValue(new Edge(i, m), out Edge edge1))
             {
+                angles++; // a
                 var angle1 = Vector3.Angle(normal, edge1.normal);
-                if (angle1 < 0 || angle1 > 100) return false;
+                anglesSum += angle1; // a
+
+                //if (angle1 < 0 || angle1 > 45) return false;
             }
 
             if (edges.TryGetValue(new Edge(j, m), out Edge edge2))
             {
+                angles++; // a
                 var angle2 = Vector3.Angle(normal, edge2.normal);
-                if (angle2 < 0 || angle2 > 100) return false;
+                anglesSum += angle2;
+                //if (angle2 < 0 || angle2 > 45) return false;
             }
 
             var angle = Vector3.Angle(normal, e_ij.normal);
-            if (angle < 0 || angle > 100) return false;
+            //if (angle < 0 || angle > 45) return false;
+
+            anglesSum += angle;
+
+            if (angles == 3 && anglesSum > 180f) return false;
+            else if (angles == 2 && anglesSum > 140f) return false;
+            else if (angles == 1 && anglesSum > 90f) return false;
         }
         
         Triangle candidate = new Triangle(PointCloud[e_ij.vertex1].Position, PointCloud[e_ij.vertex2].Position, PointCloud[m].Position, new int[] { e_ij.vertex1, e_ij.vertex2, m });

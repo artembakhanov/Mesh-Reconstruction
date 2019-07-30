@@ -174,13 +174,13 @@ namespace Bakhanov.IPD
             if ((point1 - point2).magnitude < 1e-6f)
             {
                 if (common1_1 != common2_1) return false;
-                if (fixedPoints.Contains(common1_1) || fixedPoints.Contains(common2_1)) return false;
+                //if (fixedPoints.Contains(common1_1) || fixedPoints.Contains(common2_1)) return false;
                 foreach (var ap in allowedPoints)
                 {
                     if ((ap - point1).magnitude < 1e-6f)
                         return true;
                 }
-                return false;//common1_1 == 1 && common2_1 == 1;
+                return true;//Vector3.Angle(this.face.normal, o.face.normal) < 90f;//common1_1 == 1 && common2_1 == 1;
             }
             else
             {

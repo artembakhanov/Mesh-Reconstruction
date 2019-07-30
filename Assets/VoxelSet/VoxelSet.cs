@@ -67,6 +67,7 @@ public class VoxelSet
         IdIndexPairs.Clear();
         Points = new List<Point>();
         Voxels = new Dictionary<Vector3Int, List<int>>();
+        VoxelVersions = new Dictionary<Vector3Int, int>();
 
         foreach (var point in points)
         {
@@ -117,6 +118,8 @@ public class VoxelSet
 
         if (CheckRadix)
             point.ColliderRadius = Radius(point.ConfidenceValue);
+        else
+            point.ColliderRadius = Radius(0);
 
         if (!SmartUpdate || CheckVoxelVersion(GetKey(point.Position)))
         {
