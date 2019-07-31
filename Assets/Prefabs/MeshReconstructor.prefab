@@ -51,7 +51,7 @@ MonoBehaviour:
   voxelSize: 0.07
   addWhenTouched: 0
   uniteNearbyPoints: 1
-  useRadix: 1
+  useRadix: 0
   filterPointsFarFromCenter: 1
   maxDistanceFromCenter: 300
   filterPointsWithSmallConfValue: 1
@@ -4816,6 +4816,8 @@ MonoBehaviour:
   smartUpdate: 1
   forceUpdate: 1
   forceUpdateIterations: 5
+  test: {fileID: 7673462184223594739, guid: 860a9ae34b297894aa0552f1b6e26b4d, type: 3}
+  test1: {fileID: 2100000, guid: c249b5410bcfae346a0c14c19b831c92, type: 2}
   meshMaterial: {fileID: 2100000, guid: 4c0a9553b8887d043b465910b01bf4f5, type: 2}
 --- !u!114 &6136600676840395910
 MonoBehaviour:
