@@ -12,8 +12,8 @@ public class IPDMeshCreator
     public bool smartUpdate = false;
     public bool closedInfluenceRegion2 = true;
     public bool newNormalByDot = false;
-    public bool checkLengths = false;
-    public float maxEdgeLength = 0.1714f;
+    public bool checkLengths = true;
+    public float maxEdgeLength = 0.1715f;
     public bool checkFacesAngle = true;
     public float sMult = 1f;
     private int buildPCounter = 0;

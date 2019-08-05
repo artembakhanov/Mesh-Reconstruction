@@ -228,6 +228,8 @@ public class VoxelSet
     public void Clear()
     {
         IdIndexPairs.Clear();
+        newActivePoints.Clear();
+        lastActivePoints.Clear();
         Points = new List<Point>();
         Voxels = new Dictionary<Vector3Int, List<int>>();
     }

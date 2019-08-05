@@ -1098,6 +1098,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 427201402}
   m_CullTransparentMesh: 0
+--- !u!114 &463930444 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6136600676840395904, guid: 6759dc68bac79064687bfea44e1a99e9,
+    type: 3}
+  m_PrefabInstance: {fileID: 803555881}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b01413f1a99cdd45b79ea832defa7a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &466358379
 GameObject:
   m_ObjectHideFlags: 0
@@ -1635,6 +1647,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6136600676840395904, guid: 6759dc68bac79064687bfea44e1a99e9,
+        type: 3}
+      propertyPath: voxelSize
+      value: 0.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 6136600676840395904, guid: 6759dc68bac79064687bfea44e1a99e9,
+        type: 3}
+      propertyPath: minConfidenceValue
+      value: 0.55
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6759dc68bac79064687bfea44e1a99e9, type: 3}
@@ -3089,7 +3111,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 463930444}
         m_MethodName: SavePoints
         m_Mode: 1
         m_Arguments:

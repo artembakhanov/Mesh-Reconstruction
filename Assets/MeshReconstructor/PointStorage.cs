@@ -100,4 +100,10 @@ public class PointStorage : MonoBehaviour
 
         File.WriteAllLines(filePath, lines);
     }
+
+    public void Clear()
+    {
+        voxelSet.Clear();
+        voxelSet.Update();
+    }
 }
